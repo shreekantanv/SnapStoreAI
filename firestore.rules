@@ -1,0 +1,32 @@
+// Firestore Security Rules for AI Tool Store
+//
+// These rules enforce the security model where:
+// 1. Users can only read their own data.
+// 2. All writes are denied from the client, forcing mutations to go through
+//    trusted Cloud Functions, which operate with admin privileges.
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // The 'users' collection stores per-user data like credit balance.
+    match /users/{userId} {
+      // Users can read their own document to check their credit balance, etc.
+      allow read: if request.auth.uid == userId;
+
+      // Writes are completely disallowed from the client.
+      // All mutations (debiting/crediting) MUST be done via Cloud Functions.
+      allow write: if false;
+
+      // The 'ledger' subcollection contains a history of transactions.
+      match /ledger/{docId} {
+        // Users can read their own transaction history.
+        allow read: if request.auth.uid == userId;
+
+        // Writes are also disallowed here.
+        allow write: if false;
+      }
+    }
+  }
+}

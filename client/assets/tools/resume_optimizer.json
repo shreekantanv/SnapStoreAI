@@ -1,0 +1,22 @@
+{
+  "id": "resume-optimizer",
+  "name": "Resume Optimizer",
+  "description": "Analyzes your resume and a job description to give you powerful bullet points tailored to the role. Uses the powerful GPT-4 model.",
+  "category": "Career",
+  "model": "gpt-4",
+  "premium": true,
+  "form": [
+    {
+      "type": "textarea",
+      "name": "job_description",
+      "label": "Job Description",
+      "placeholder": "Paste the full job description here."
+    },
+    {
+      "type": "textarea",
+      "name": "resume_bullets",
+      "label": "Your Current Resume Bullet Points",
+      "placeholder": "Paste your relevant work experience bullet points here."
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "id": "trip-planner",
+  "name": "Trip Planner",
+  "description": "Generates a detailed itinerary for your next vacation. Just provide the destination, duration, and your interests.",
+  "category": "Travel",
+  "model": "gemini-pro",
+  "premium": false,
+  "form": [
+    {
+      "type": "text",
+      "name": "destination",
+      "label": "Destination City",
+      "placeholder": "e.g., Paris, France"
+    },
+    {
+      "type": "number",
+      "name": "duration",
+      "label": "Trip Duration (days)",
+      "defaultValue": 7
+    },
+    {
+      "type": "textarea",
+      "name": "interests",
+      "label": "Your Interests",
+      "placeholder": "e.g., museums, hiking, local food, history"
+    }
+  ]
+}

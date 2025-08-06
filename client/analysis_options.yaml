@@ -1,0 +1,18 @@
+# This file configures the static analysis results for your project (errors,
+# warnings, and lints).
+#
+# For more information, see:
+# https://dart.dev/guides/language/analysis-options
+
+include: package:flutter_lints/flutter.yaml
+
+linter:
+  # The lint rules are defined in the included file. You can customize them
+  # here. For a list of all available lints, see:
+  # https://dart.dev/tools/linter-rules
+  rules:
+    # Example of disabling a lint rule:
+    # avoid_print: false
+
+    # Example of enabling a lint rule:
+    # prefer_single_quotes: true
