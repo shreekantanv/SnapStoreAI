@@ -5,9 +5,9 @@ class ToolStoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       appBar: AppBar(title: Text('AI Tool Store')),
-      body: Center(child: Text('Tool Store Screen')),
+      body: const Center(child: Text('Tool Store Screen')),
     );
   }
 }

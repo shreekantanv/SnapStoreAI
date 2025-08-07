@@ -1,0 +1,5 @@
+/client/windows/runner
+/client/macos/Runner
+/client/linux/runner
+/.idea
+/client/ios/Runner

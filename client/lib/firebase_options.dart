@@ -50,28 +50,30 @@ class DefaultFirebaseOptions {
   // Replace these with the actual values from your Firebase project console.
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'your-web-api-key',
-    appId: 'your-web-app-id',
-    messagingSenderId: 'your-messaging-sender-id',
-    projectId: 'your-project-id',
-    authDomain: 'your-project-id.firebaseapp.com',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyDZJhguCtmY53o3fBZXsJ8UAcSbvzEXPbM',
+    appId: '1:983351827742:web:e0f36ed26c5fb6537efd0f',
+    messagingSenderId: '983351827742',
+    projectId: 'snapsolveai-b74fc',
+    authDomain: 'snapsolveai-b74fc.firebaseapp.com',
+    storageBucket: 'snapsolveai-b74fc.firebasestorage.app',
+    measurementId: 'G-J3Y9NH4B12',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'your-android-api-key',
-    appId: 'your-android-app-id',
-    messagingSenderId: 'your-messaging-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
+    apiKey: 'AIzaSyDzLp2fkLLOeIkcXd2LiI3NQwugqgHWNaQ',
+    appId: '1:983351827742:android:0d4813cf8a7194a47efd0f',
+    messagingSenderId: '983351827742',
+    projectId: 'snapsolveai-b74fc',
+    storageBucket: 'snapsolveai-b74fc.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'your-ios-api-key',
-    appId: 'your-ios-app-id',
-    messagingSenderId: 'your-messaging-sender-id',
-    projectId: 'your-project-id',
-    storageBucket: 'your-project-id.appspot.com',
-    iosBundleId: 'com.example.aiToolStoreClient',
+    apiKey: 'AIzaSyBCVXwokWJjnDryoFShF3mrb7SoLxx16fE',
+    appId: '1:983351827742:ios:a5b55a007cb3259a7efd0f',
+    messagingSenderId: '983351827742',
+    projectId: 'snapsolveai-b74fc',
+    storageBucket: 'snapsolveai-b74fc.firebasestorage.app',
+    iosBundleId: 'com.vish.snapsolveai',
   );
+
 }

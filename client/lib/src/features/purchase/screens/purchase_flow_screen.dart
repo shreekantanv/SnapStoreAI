@@ -5,9 +5,9 @@ class PurchaseFlowScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       appBar: AppBar(title: Text('Purchase Credits')),
-      body: Center(child: Text('Purchase Flow Screen')),
+      body: const Center(child: Text('Purchase Flow Screen')),
     );
   }
 }
