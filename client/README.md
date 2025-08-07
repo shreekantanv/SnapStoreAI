@@ -1,4 +1,4 @@
-# ai_tool_store_client
+# client
 
 A new Flutter project.
 

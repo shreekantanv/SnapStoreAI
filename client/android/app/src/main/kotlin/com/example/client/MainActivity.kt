@@ -1,4 +1,4 @@
-package com.example.ai_tool_store_client
+package com.example.client
 
 import io.flutter.embedding.android.FlutterActivity
 
