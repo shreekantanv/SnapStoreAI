@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+import '../l10n/app_localizations.dart';
 import '../models/tool.dart';
 import '../providers/tool_provider.dart';
-import '../widgets/category_widget.dart';
 import '../widgets/tool_widget.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';

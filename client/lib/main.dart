@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
-import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 
 import 'firebase_options.dart'; // generated via flutterfire CLI
+import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
 import 'providers/tool_provider.dart';
 import 'providers/theme_provider.dart';
