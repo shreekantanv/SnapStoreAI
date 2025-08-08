@@ -1,8 +1,7 @@
-// lib/screens/auth_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../providers/auth_provider.dart';
-import 'home_screen.dart';
 
 class AuthScreen extends StatelessWidget {
   static const routeName = '/auth';
@@ -11,38 +10,32 @@ class AuthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
-
-    // If signed in (anon or Google), leave this screen.
-    if (auth.user != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          HomeScreen.routeName,
-              (_) => false,
-        );
-      });
-    }
+    final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign In')),
+      appBar: AppBar(title: Text(l10n.signIn)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              if (auth.error != null && auth.user == null) ...[
+              if (auth.error != null) ...[
                 Text(auth.error!, style: const TextStyle(color: Colors.red)),
                 const SizedBox(height: 12),
               ],
               ElevatedButton.icon(
                 icon: Image.asset('assets/images/google_logo.png', height: 24),
                 label: const Text('Sign in with Google'),
-                onPressed: auth.isLoading ? null : () => auth.signInWithGoogle(),
-                style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
+                onPressed:
+                auth.isLoading ? null : () => auth.signInWithGoogle(),
+                style:
+                ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(48)),
               ),
               const SizedBox(height: 16),
               TextButton(
-                onPressed: auth.isLoading ? null : () => auth.signInAnonymously(),
+                onPressed:
+                auth.isLoading ? null : () => auth.signInAnonymously(),
                 child: const Text('Continue as Guest'),
               ),
               if (auth.isLoading) ...[

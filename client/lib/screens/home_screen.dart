@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
 import '../models/tool.dart';
 import '../providers/tool_provider.dart';
 import '../widgets/category_widget.dart';
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<ToolProvider>();
     final themeProvider = context.watch<ThemeProvider>();
+    final l10n = AppLocalizations.of(context)!;
 
     // early loading / error states
     if (prov.isLoading) {
@@ -50,7 +52,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AI Toolbox'),
+        title: Text(l10n.aiToolbox),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
@@ -143,26 +145,27 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentNavIndex,
         onTap: (i) => setState(() => _currentNavIndex = i),
-        items: const [
+        type: BottomNavigationBarType.fixed, // Ensure visibility
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Tools',
+            icon: const Icon(Icons.home),
+            label: l10n.tools,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.favorite),
-            label: 'Favorites',
+            icon: const Icon(Icons.favorite),
+            label: l10n.favorites,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'History',
+            icon: const Icon(Icons.history),
+            label: l10n.history,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_balance_wallet),
-            label: 'Wallet',
+            icon: const Icon(Icons.account_balance_wallet),
+            label: l10n.wallet,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings),
-            label: 'Settings',
+            icon: const Icon(Icons.settings),
+            label: l10n.settings,
           ),
         ],
       ),

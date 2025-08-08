@@ -1,62 +1,90 @@
-// lib/providers/auth_provider.dart
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final _auth = FirebaseAuth.instance;
-  final _google = GoogleSignIn(scopes: ['email']);
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
 
   User? user;
   bool isLoading = true;
   String? error;
 
   AuthProvider() {
+    // Listen to auth state changes
     _auth.authStateChanges().listen((u) {
       user = u;
       isLoading = false;
-      error = null;                // ← clear stale errors once we have a user
       notifyListeners();
     });
   }
 
+  /// Sign in with Google.
   Future<void> signInWithGoogle() async {
-    _start();
+    _setLoading(true);
+    _clearError();
+
     try {
-      final acct = await _google.signIn();
-      if (acct == null) return _stop(); // user cancelled
-      final auth = await acct.authentication;
+      final googleUser = await _googleSignIn.signIn();
+      if (googleUser == null) {
+        // User cancelled
+        return _setLoading(false);
+      }
+
+      final googleAuth = await googleUser.authentication;
       final cred = GoogleAuthProvider.credential(
-        accessToken: auth.accessToken,
-        idToken: auth.idToken,
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
       );
-      await _auth.signInWithCredential(cred); // listener will fire
-      _stop();
+
+      await _auth.signInWithCredential(cred);
+      // authStateChanges listener will pick up the new user
     } catch (e) {
+      debugPrint(e.toString());
       error = e.toString();
-      _stop();
+      _setLoading(false);
+      notifyListeners();
     }
   }
 
+  /// Continue as anonymous guest.
   Future<void> signInAnonymously() async {
-    _start();
+    _setLoading(true);
+    _clearError();
+
     try {
-      await _auth.signInAnonymously();       // success -> listener fires
-      _stop();
+      await _auth.signInAnonymously();
+      // authStateChanges listener will pick up the anonymous user
     } catch (e) {
+      debugPrint(e.toString());
       error = e.toString();
-      _stop();
+      _setLoading(false);
+      notifyListeners();
     }
   }
-
 
   /// Sign out from both Firebase and Google.
   Future<void> signOut() async {
     await _auth.signOut();
-    // Also sign out of Google to clear session
-    await _google.signOut();
+    // Also sign out of Google to clear session, if previously signed in
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      debugPrint("Error signing out from Google: $e");
+      // Ignore error, as user might not have been signed in with Google.
+    }
   }
 
-  void _start() { isLoading = true; error = null; notifyListeners(); }
-  void _stop()  { isLoading = false; notifyListeners(); }
+  // Helpers
+
+  void _setLoading(bool v) {
+    isLoading = v;
+    notifyListeners();
+  }
+
+  void _clearError() {
+    error = null;
+    notifyListeners();
+  }
 }
