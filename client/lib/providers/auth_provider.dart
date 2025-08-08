@@ -41,8 +41,10 @@ class AuthProvider extends ChangeNotifier {
       await _auth.signInWithCredential(cred);
       // authStateChanges listener will pick up the new user
     } catch (e) {
+      debugPrint(e.toString());
       error = e.toString();
       _setLoading(false);
+      notifyListeners();
     }
   }
 
@@ -55,8 +57,10 @@ class AuthProvider extends ChangeNotifier {
       await _auth.signInAnonymously();
       // authStateChanges listener will pick up the anonymous user
     } catch (e) {
+      debugPrint(e.toString());
       error = e.toString();
       _setLoading(false);
+      notifyListeners();
     }
   }
 
