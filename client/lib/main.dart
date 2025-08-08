@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart'; // generated via flutterfire CLI
 import 'providers/auth_provider.dart';
 import 'providers/tool_provider.dart';
+import 'providers/theme_provider.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -28,19 +29,34 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => ToolProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
-      child: MaterialApp(
-        title: 'SnapStoreAI',
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
-        ),
-        initialRoute: SplashScreen.routeName,
-        routes: {
-          SplashScreen.routeName: (_) => const SplashScreen(),
-          OnboardingScreen.routeName: (_) => const OnboardingScreen(),
-          AuthScreen.routeName: (_) => const AuthScreen(),
-          HomeScreen.routeName: (_) => const HomeScreen(),
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, child) {
+          return MaterialApp(
+            title: 'SnapStoreAI',
+            theme: ThemeData(
+              brightness: Brightness.light,
+              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+              useMaterial3: true,
+            ),
+            darkTheme: ThemeData(
+              brightness: Brightness.dark,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.dark,
+              ),
+              useMaterial3: true,
+            ),
+            themeMode: themeProvider.themeMode,
+            initialRoute: SplashScreen.routeName,
+            routes: {
+              SplashScreen.routeName: (_) => const SplashScreen(),
+              OnboardingScreen.routeName: (_) => const OnboardingScreen(),
+              AuthScreen.routeName: (_) => const AuthScreen(),
+              HomeScreen.routeName: (_) => const HomeScreen(),
+            },
+          );
         },
       ),
     );

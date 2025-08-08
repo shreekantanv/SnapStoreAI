@@ -4,6 +4,8 @@ import '../models/tool.dart';
 import '../providers/tool_provider.dart';
 import '../widgets/category_widget.dart';
 import '../widgets/tool_widget.dart';
+import '../providers/auth_provider.dart';
+import '../providers/theme_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/home';
@@ -21,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final prov = context.watch<ToolProvider>();
+    final themeProvider = context.watch<ThemeProvider>();
 
     // early loading / error states
     if (prov.isLoading) {
@@ -49,6 +52,20 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('AI Toolbox'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: Icon(
+              themeProvider.themeMode == ThemeMode.light
+                  ? Icons.dark_mode
+                  : Icons.light_mode,
+            ),
+            onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () => context.read<AuthProvider>().signOut(),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Column(

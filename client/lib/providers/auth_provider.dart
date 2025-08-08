@@ -46,31 +46,14 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // /// Continue as anonymous guest.
-  // Future<void> signInAnonymously() async {
-  //   _setLoading(true);
-  //   _clearError();
-  //
-  //   try {
-  //     await _auth.signInAnonymously();
-  //     // authStateChanges listener will pick up the anonymous user
-  //   } catch (e) {
-  //     error = e.toString();
-  //     _setLoading(false);
-  //   }
-  // }
-
-  /// Bypass Firebase and navigate directly to HomeScreen for now.
-  Future<void> signInAnonymously(BuildContext context) async {
+  /// Continue as anonymous guest.
+  Future<void> signInAnonymously() async {
     _setLoading(true);
     _clearError();
 
     try {
-      // TEMPORARY: bypass Firebase
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _setLoading(false);
-        Navigator.pushReplacementNamed(context, '/home');
-      });
+      await _auth.signInAnonymously();
+      // authStateChanges listener will pick up the anonymous user
     } catch (e) {
       error = e.toString();
       _setLoading(false);

@@ -33,7 +33,7 @@ class AuthScreen extends StatelessWidget {
               const SizedBox(height: 16),
               TextButton(
                 onPressed:
-                auth.isLoading ? null : () => auth.signInAnonymously(context),
+                auth.isLoading ? null : () => auth.signInAnonymously(),
                 child: const Text('Continue as Guest'),
               ),
               if (auth.isLoading) ...[
