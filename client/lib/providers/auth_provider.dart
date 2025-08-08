@@ -49,6 +49,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+
   /// Sign out from both Firebase and Google.
   Future<void> signOut() async {
     await _auth.signOut();
