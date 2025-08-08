@@ -13,7 +13,6 @@ class AuthScreen extends StatelessWidget {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.signIn)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32),

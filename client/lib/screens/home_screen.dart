@@ -52,7 +52,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.aiToolbox),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
