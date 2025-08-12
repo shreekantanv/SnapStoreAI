@@ -1,3 +1,5 @@
+import 'package:client/screens/history_screen.dart';
+import 'package:client/screens/settings_screen.dart';
 import 'package:client/screens/tools/political_leaning_analyzer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -85,7 +87,15 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentNavIndex,
-            onTap: (i) => setState(() => _currentNavIndex = i),
+            onTap: (i) {
+              if (i == 4) {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
+              } else if (i == 2) {
+                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HistoryScreen()));
+              } else {
+                setState(() => _currentNavIndex = i);
+              }
+            },
             type: BottomNavigationBarType.fixed,
             items: [
               BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.tools),

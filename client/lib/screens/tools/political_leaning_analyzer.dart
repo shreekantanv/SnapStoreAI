@@ -1,8 +1,10 @@
 // lib/tools/political_leaning_analyzer.dart
 import 'dart:convert';
 import 'dart:ui';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:client/l10n/app_localizations.dart';
 import 'package:client/models/topic_tag.dart';
@@ -304,15 +306,56 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
     setState(() => _status = 'Authenticating...');
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      // Handle user not logged in
       if (mounted) Navigator.pop(context);
       return;
     }
 
-    final idToken = await user.getIdToken();
-    setState(() => _status = 'Analyzing handle...');
+    // Check for premium status and BYOK
+    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final userData = userDoc.data();
+    final isPremium = userData?['isPremium'] == true &&
+        (userData?['premiumExpires'] as Timestamp).toDate().isAfter(DateTime.now());
 
-    // Replace with your actual deployed function URL
+    const storage = FlutterSecureStorage();
+    final apiKey = await storage.read(key: 'grok_api_key');
+
+    if (isPremium && apiKey != null && apiKey.isNotEmpty) {
+      await _runAnalysisWithClientSideApiKey(apiKey);
+    } else {
+      await _runAnalysisWithBackend();
+    }
+  }
+
+  Future<void> _runAnalysisWithClientSideApiKey(String apiKey) async {
+    setState(() => _status = 'Analyzing with your API key...');
+    // TODO: Implement direct API call to Grok
+    // This is a placeholder for the direct API call
+    await Future.delayed(const Duration(seconds: 2));
+    final data = {
+      "leaning": 0.75,
+      "summary": "Analysis from your API key.",
+      "topicBreakdown": [],
+      "keywordClouds": [[], []]
+    };
+    final results = _parseResults(data);
+    _logActivity(results.summary);
+    if (mounted) {
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => ResultsScreen(
+          handle: widget.handle,
+          leaning: results.leaning,
+          summary: results.summary,
+          topicBreakdown: results.topicBreakdown,
+          keywordClouds: results.keywordClouds,
+        ),
+      ));
+    }
+  }
+
+  Future<void> _runAnalysisWithBackend() async {
+    setState(() => _status = 'Analyzing with credits...');
+    final user = FirebaseAuth.instance.currentUser!;
+    final idToken = await user.getIdToken();
     const url = 'https://us-central1-snapsolveai-b74fc.cloudfunctions.net/api/runTool';
 
     try {
@@ -324,7 +367,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
         },
         body: jsonEncode({
           'toolId': 'political_leaning_analyzer',
-          'model': 'grok-1', // Or another relevant model
+          'model': 'grok-1',
           'prompt': widget.handle,
         }),
       );
@@ -334,7 +377,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body)['result'];
         final results = _parseResults(data);
-
+        _logActivity(results.summary);
         Navigator.of(context).pushReplacement(MaterialPageRoute(
           builder: (_) => ResultsScreen(
             handle: widget.handle,
@@ -345,7 +388,6 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
           ),
         ));
       } else {
-        // Handle error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Error: ${response.reasonPhrase}')),
         );
@@ -357,6 +399,31 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
         SnackBar(content: Text('An error occurred: $e')),
       );
       Navigator.pop(context);
+    }
+  }
+
+  Future<void> _logActivity(String summary) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final idToken = await user.getIdToken();
+    const url = 'https://us-central1-snapsolveai-b74fc.cloudfunctions.net/api/logActivity';
+
+    try {
+      await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: jsonEncode({
+          'toolId': 'political_leaning_analyzer',
+          'prompt': widget.handle,
+          'result': summary,
+        }),
+      );
+    } catch (e) {
+      debugPrint('Error logging activity: $e');
     }
   }
 
