@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:client/providers/firestore_provider.dart';
+import 'package:client/screens/tools/political_leaning_analyzer.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -47,17 +48,56 @@ class _HistoryScreenState extends State<HistoryScreen> {
             itemCount: activities.length,
             itemBuilder: (context, index) {
               final activity = activities[index].data() as Map<String, dynamic>;
-              return ListTile(
-                title: Text(activity['toolId']),
-                subtitle: Text(activity['prompt']),
-                trailing: Text(
-                  (activity['ts'] as Timestamp).toDate().toString(),
-                ),
-              );
+              return _HistoryListItem(activity: activity);
             },
           );
         },
       ),
+    );
+  }
+}
+
+class _HistoryListItem extends StatelessWidget {
+  final Map<String, dynamic> activity;
+
+  const _HistoryListItem({required this.activity});
+
+  @override
+  Widget build(BuildContext context) {
+    final toolId = activity['toolId'] as String;
+
+    switch (toolId) {
+      case 'political_leaning_analyzer':
+        return _buildPoliticalLeaningTile(context);
+      default:
+        return ListTile(
+          title: Text(toolId),
+          subtitle: const Text('Unknown tool type'),
+        );
+    }
+  }
+
+  Widget _buildPoliticalLeaningTile(BuildContext context) {
+    final inputs = activity['inputs'] as Map<String, dynamic>;
+    final outputs = activity['outputs'] as Map<String, dynamic>;
+    final handle = inputs['value'] as String;
+    final summary = outputs['summary'] as String;
+    final ts = (activity['ts'] as Timestamp).toDate();
+
+    return ListTile(
+      leading: const Icon(Icons.balance),
+      title: Text('Political Leaning: $handle'),
+      subtitle: Text(summary, maxLines: 2, overflow: TextOverflow.ellipsis),
+      trailing: Text('${ts.month}/${ts.day}/${ts.year}'),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PoliticalLeaningEntryScreen(
+              initialActivity: activity,
+            ),
+          ),
+        );
+      },
     );
   }
 }

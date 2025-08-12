@@ -10,12 +10,12 @@ class FirestoreProvider {
     return _firestore.collection('users').doc(uid).get();
   }
 
-  Future<void> logActivity(String uid, String toolId, String prompt, String result) {
+  Future<void> logActivity(String uid, String toolId, Map<String, dynamic> inputs, Map<String, dynamic> outputs) {
     return _firestore.collection('user_activity').add({
       'uid': uid,
       'toolId': toolId,
-      'prompt': prompt,
-      'result': result,
+      'inputs': inputs,
+      'outputs': outputs,
       'ts': FieldValue.serverTimestamp(),
     });
   }

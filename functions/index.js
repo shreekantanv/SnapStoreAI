@@ -209,11 +209,11 @@ app.post("/purchaseWebhook", async (req, res) => {
  * Logs a tool usage event for a premium user.
  */
 app.post("/logActivity", authenticate, async (req, res) => {
-    const { toolId, prompt, result } = req.body;
+    const { toolId, inputs, outputs } = req.body;
     const { uid } = req.user;
 
-    if (!toolId || !prompt || !result) {
-        return res.status(400).send("Missing required fields: toolId, prompt, or result.");
+    if (!toolId || !inputs || !outputs) {
+        return res.status(400).send("Missing required fields: toolId, inputs, or outputs.");
     }
 
     try {
@@ -234,8 +234,8 @@ app.post("/logActivity", authenticate, async (req, res) => {
             await activityRef.set({
                 uid,
                 toolId,
-                prompt,
-                result,
+                inputs,
+                outputs,
                 ts: admin.firestore.FieldValue.serverTimestamp(),
             });
         }

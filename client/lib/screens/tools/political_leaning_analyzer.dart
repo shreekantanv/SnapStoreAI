@@ -12,7 +12,9 @@ import 'package:client/providers/firestore_provider.dart';
 import 'package:client/services/api_service.dart';
 
 class PoliticalLeaningEntryScreen extends StatefulWidget {
-  const PoliticalLeaningEntryScreen({super.key});
+  final Map<String, dynamic>? initialActivity;
+
+  const PoliticalLeaningEntryScreen({super.key, this.initialActivity});
 
   @override
   State<PoliticalLeaningEntryScreen> createState() => _PoliticalLeaningEntryScreenState();
@@ -20,6 +22,42 @@ class PoliticalLeaningEntryScreen extends StatefulWidget {
 
 class _PoliticalLeaningEntryScreenState extends State<PoliticalLeaningEntryScreen> {
   final _handleCtrl = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialActivity != null) {
+      _showHistoricalResults();
+    }
+  }
+
+  void _showHistoricalResults() {
+    final outputs = widget.initialActivity!['outputs'] as Map<String, dynamic>;
+    final topicBreakdown = (outputs['topicBreakdown'] as List)
+        .map((t) => TopicScore(
+              t['topic'],
+              t['tag'] == 'TopicTag.progressive' ? TopicTag.progressive : TopicTag.conservative,
+              (t['score'] as num).toDouble(),
+            ))
+        .toList();
+    final keywordClouds = (outputs['keywordClouds'] as List)
+        .map((c) => (c as List).map((s) => s.toString()).toList())
+        .toList();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => ResultsScreen(
+            handle: widget.initialActivity!['inputs']['value'],
+            leaning: (outputs['leaning'] as num).toDouble(),
+            summary: outputs['summary'],
+            topicBreakdown: topicBreakdown,
+            keywordClouds: keywordClouds,
+          ),
+        ),
+      );
+    });
+  }
 
   @override
   void dispose() {
@@ -343,7 +381,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
       "keywordClouds": [[], []]
     };
     final results = _parseResults(data);
-    await _logActivity(results.summary);
+    await _logActivity(results);
     if (mounted) {
       Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => ResultsScreen(
@@ -370,7 +408,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
 
       final data = response['result'];
       final results = _parseResults(data);
-      await _logActivity(results.summary);
+      await _logActivity(results);
       Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => ResultsScreen(
           handle: widget.handle,
@@ -389,17 +427,26 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
     }
   }
 
-  Future<void> _logActivity(String summary) async {
+  Future<void> _logActivity(_ParsedResults results) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
     final firestoreProvider = context.read<FirestoreProvider>();
     try {
+      final inputs = {'type': 'text', 'value': widget.handle};
+      final outputs = {
+        'type': 'political_analysis_result',
+        'summary': results.summary,
+        'leaning': results.leaning,
+        'topicBreakdown': results.topicBreakdown.map((t) => {'topic': t.topic, 'tag': t.tag.toString(), 'score': t.score}).toList(),
+        'keywordClouds': results.keywordClouds,
+      };
+
       await firestoreProvider.logActivity(
         user.uid,
         'political_leaning_analyzer',
-        widget.handle,
-        summary,
+        inputs,
+        outputs,
       );
     } catch (e) {
       debugPrint('Error logging activity: $e');
