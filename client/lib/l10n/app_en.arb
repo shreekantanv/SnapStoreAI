@@ -1,0 +1,14 @@
+{
+    "signIn": "Sign In",
+    "signInWithGoogle": "Sign in with Google",
+    "continueAsGuest": "Continue as Guest",
+    "toolStore": "Tool Store",
+    "searchForTools": "Search for tools",
+    "all": "All",
+    "tools": "Tools",
+    "favorites": "Favorites",
+    "history": "History",
+    "wallet": "Wallet",
+    "settings": "Settings",
+    "aiToolbox": "AI Toolbox"
+}
