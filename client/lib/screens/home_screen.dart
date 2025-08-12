@@ -1,6 +1,6 @@
 import 'package:client/screens/history_screen.dart';
 import 'package:client/screens/settings_screen.dart';
-import 'package:client/screens/tools/political_leaning_analyzer.dart';
+import 'package:client/screens/tools/tool_entry_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -32,20 +32,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onToolTap(Tool tool) {
-    // Prefer routing by stable tool.id
-    final id = (tool.id ?? '').trim();
-    debugPrint('Tapped tool -> id=${id}, title=${tool.title}');
-    switch (id) {
-      case 'IRVPDzBQqV5qVFLJYheU':
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const PoliticalLeaningEntryScreen()),
-        );
-        return;
-    }
-
-    // Default (optional)
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Coming soon')),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ToolEntryScreen(tool: tool)),
     );
   }
 
