@@ -1,66 +1,51 @@
-import 'package:flutter/cupertino.dart';
+// lib/providers/auth_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn(scopes: ['email']);
+  final _auth = FirebaseAuth.instance;
+  final _google = GoogleSignIn(scopes: ['email']);
 
   User? user;
   bool isLoading = true;
   String? error;
 
   AuthProvider() {
-    // Listen to auth state changes
     _auth.authStateChanges().listen((u) {
       user = u;
       isLoading = false;
+      error = null;                // ← clear stale errors once we have a user
       notifyListeners();
     });
   }
 
-  /// Sign in with Google.
   Future<void> signInWithGoogle() async {
-    _setLoading(true);
-    _clearError();
-
+    _start();
     try {
-      final googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        // User cancelled
-        return _setLoading(false);
-      }
-
-      final googleAuth = await googleUser.authentication;
+      final acct = await _google.signIn();
+      if (acct == null) return _stop(); // user cancelled
+      final auth = await acct.authentication;
       final cred = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
+        accessToken: auth.accessToken,
+        idToken: auth.idToken,
       );
-
-      await _auth.signInWithCredential(cred);
-      // authStateChanges listener will pick up the new user
+      await _auth.signInWithCredential(cred); // listener will fire
+      _stop();
     } catch (e) {
-      debugPrint(e.toString());
       error = e.toString();
-      _setLoading(false);
-      notifyListeners();
+      _stop();
     }
   }
 
-  /// Continue as anonymous guest.
   Future<void> signInAnonymously() async {
-    _setLoading(true);
-    _clearError();
-
+    _start();
     try {
-      await _auth.signInAnonymously();
-      // authStateChanges listener will pick up the anonymous user
+      await _auth.signInAnonymously();       // success -> listener fires
+      _stop();
     } catch (e) {
-      debugPrint(e.toString());
       error = e.toString();
-      _setLoading(false);
-      notifyListeners();
+      _stop();
     }
   }
 
@@ -69,22 +54,13 @@ class AuthProvider extends ChangeNotifier {
     await _auth.signOut();
     // Also sign out of Google to clear session, if previously signed in
     try {
-      await _googleSignIn.signOut();
+      await _google.signOut();
     } catch (e) {
       debugPrint("Error signing out from Google: $e");
       // Ignore error, as user might not have been signed in with Google.
     }
   }
 
-  // Helpers
-
-  void _setLoading(bool v) {
-    isLoading = v;
-    notifyListeners();
-  }
-
-  void _clearError() {
-    error = null;
-    notifyListeners();
-  }
+  void _start() { isLoading = true; error = null; notifyListeners(); }
+  void _stop()  { isLoading = false; notifyListeners(); }
 }
