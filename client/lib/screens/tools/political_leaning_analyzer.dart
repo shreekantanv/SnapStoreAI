@@ -1,6 +1,9 @@
 // lib/tools/political_leaning_analyzer.dart
+import 'dart:convert';
 import 'dart:ui';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:client/l10n/app_localizations.dart';
 import 'package:client/models/topic_tag.dart';
 
@@ -265,6 +268,20 @@ class _Blob extends StatelessWidget {
 
 /* ------------------------------ Analysis In Progress ------------------------------ */
 
+class _ParsedResults {
+  final double leaning;
+  final String summary;
+  final List<TopicScore> topicBreakdown;
+  final List<List<String>> keywordClouds;
+
+  _ParsedResults({
+    required this.leaning,
+    required this.summary,
+    required this.topicBreakdown,
+    required this.keywordClouds,
+  });
+}
+
 class AnalysisInProgressScreen extends StatefulWidget {
   final String handle;
   const AnalysisInProgressScreen({super.key, required this.handle});
@@ -275,40 +292,93 @@ class AnalysisInProgressScreen extends StatefulWidget {
 
 class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
   double _p = 0.12;
+  String _status = '';
 
   @override
   void initState() {
     super.initState();
-    // Simulate async pipeline. Replace with your Grok/X call and navigate on completion.
-    Future.doWhile(() async {
-      await Future.delayed(const Duration(milliseconds: 320));
-      setState(() => _p = (_p + 0.09).clamp(0, 1));
-      return _p < 1.0;
-    }).then((_) {
+    _runAnalysis();
+  }
+
+  Future<void> _runAnalysis() async {
+    setState(() => _status = 'Authenticating...');
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      // Handle user not logged in
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
+    final idToken = await user.getIdToken();
+    setState(() => _status = 'Analyzing handle...');
+
+    // Replace with your actual deployed function URL
+    const url = 'https://us-central1-snapsolveai-b74fc.cloudfunctions.net/api/runTool';
+
+    try {
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $idToken',
+        },
+        body: jsonEncode({
+          'toolId': 'political_leaning_analyzer',
+          'model': 'grok-1', // Or another relevant model
+          'prompt': widget.handle,
+        }),
+      );
+
       if (!mounted) return;
-      Navigator.of(context).pushReplacement(MaterialPageRoute(
-        builder: (_) => ResultsScreen(
-          handle: widget.handle,
-          leaning: 0.35, // 0=Left, 0.5=Center, 1=Right
-          summary:
-          'You lean center‑left with emphasis on social issues and progressive policies.',
-          topicBreakdown: const [
-            TopicScore('Climate Change', TopicTag.progressive, 0.72),
-            TopicScore('Tax Cuts', TopicTag.conservative, 0.48),
-            TopicScore('Healthcare Reform', TopicTag.progressive, 0.64),
-            TopicScore('Immigration Policy', TopicTag.conservative, 0.51),
-            TopicScore('Education Funding', TopicTag.progressive, 0.58),
-            TopicScore('Gun Rights', TopicTag.conservative, 0.43),
-            TopicScore('Social Security', TopicTag.progressive, 0.55),
-            TopicScore('National Defense', TopicTag.conservative, 0.50),
-          ],
-          keywordClouds: const [
-            ['climate', 'renewables', 'emissions', 'policy', 'paris'],
-            ['tax', 'cuts', 'growth', 'jobs', 'business'],
-          ],
-        ),
-      ));
-    });
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body)['result'];
+        final results = _parseResults(data);
+
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+          builder: (_) => ResultsScreen(
+            handle: widget.handle,
+            leaning: results.leaning,
+            summary: results.summary,
+            topicBreakdown: results.topicBreakdown,
+            keywordClouds: results.keywordClouds,
+          ),
+        ));
+      } else {
+        // Handle error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${response.reasonPhrase}')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('An error occurred: $e')),
+      );
+      Navigator.pop(context);
+    }
+  }
+
+  _ParsedResults _parseResults(Map<String, dynamic> data) {
+    final topicBreakdown = (data['topicBreakdown'] as List)
+        .map((t) => TopicScore(
+      t['topic'],
+      t['tag'] == 'progressive' ? TopicTag.progressive : TopicTag.conservative,
+      (t['score'] as num).toDouble(),
+    ))
+        .toList();
+
+    final keywordClouds = (data['keywordClouds'] as List)
+        .map((c) => (c as List).map((s) => s.toString()).toList())
+        .toList();
+
+    return _ParsedResults(
+      leaning: (data['leaning'] as num).toDouble(),
+      summary: data['summary'],
+      topicBreakdown: topicBreakdown,
+      keywordClouds: keywordClouds,
+    );
   }
 
   @override
@@ -334,16 +404,13 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
             const SizedBox(height: 28),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(l10n.reviewingPosts, style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
+              child: Text(_status, style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
             ),
             const SizedBox(height: 10),
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: LinearProgressIndicator(
-                value: _p,
+              child: const LinearProgressIndicator(
                 minHeight: 10,
-                backgroundColor: cs.surfaceVariant.withOpacity(0.25),
-                color: cs.primary,
               ),
             ),
             const Spacer(),

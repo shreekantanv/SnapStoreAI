@@ -9,11 +9,16 @@
 const functions = require("firebase-functions");
 const admin = require("firebase-admin");
 const express = require("express");
+const { Grok } = require("grok-js");
+require("dotenv").config();
+
 const app = express();
 
 // Initialize Firebase Admin SDK
 // This is required to interact with Firestore and Auth
 admin.initializeApp();
+
+const grok = new Grok({ apiKey: process.env.GROK_API_KEY });
 
 const db = admin.firestore();
 
@@ -94,13 +99,33 @@ app.post("/runTool", authenticate, async (req, res) => {
       });
     });
 
-    // --- AI Model Call (STUB) ---
-    // In a real implementation, you would use the model name to call the correct
-    // API (e.g., OpenAI, Anthropic, Google AI). The API keys should be stored
-    // securely in environment variables.
-    console.log(`Calling model ${model} for user ${uid}. Prompt: ${prompt}`);
-    // MOCK RESPONSE:
-    const aiResponse = `This is a mocked response from ${model} for your prompt: "${prompt.substring(0, 50)}..."`;
+    // --- AI Model Call ---
+    let aiResponse;
+    if (toolId === "political_leaning_analyzer") {
+      console.log(`Calling Grok for political analysis of handle: ${prompt}`);
+      // In a real implementation, you would make the actual call to the Grok API.
+      // const completion = await grok.chat.completions.create({ ... });
+      // For now, we'll use a hardcoded mock response.
+      aiResponse = {
+        leaning: 0.35, // 0=Left, 0.5=Center, 1=Right
+        summary: "This user leans center-left, with a focus on social justice and environmental policies, based on their recent posts.",
+        topicBreakdown: [
+          { topic: "Climate Change", tag: "progressive", score: 0.82 },
+          { topic: "Economic Policy", tag: "progressive", score: 0.65 },
+          { topic: "Healthcare", tag: "progressive", score: 0.75 },
+          { topic: "Foreign Policy", tag: "conservative", score: 0.55 },
+        ],
+        keywordClouds: [
+          ["#climateaction", "greennewdeal", "solar", "wind"],
+          ["#healthcareforall", "#medicare4all", "pharma"],
+        ],
+      };
+    } else {
+      // Generic tool call (STUB)
+      console.log(`Calling model ${model} for user ${uid}. Prompt: ${prompt}`);
+      // MOCK RESPONSE:
+      aiResponse = `This is a mocked response from ${model} for your prompt: "${prompt.substring(0, 50)}..."`;
+    }
 
     // IMPORTANT: The prompt and response are held in memory only and not persisted.
     res.status(200).send({ result: aiResponse });
