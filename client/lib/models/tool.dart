@@ -1,3 +1,5 @@
+import 'how_it_works_step.dart';
+
 class InputField {
   final String id;
   final String type;
@@ -21,7 +23,6 @@ class InputField {
   }
 }
 
-import 'package:client/models/how_it_works_step.dart';
 
 class Tool {
   final String id;
