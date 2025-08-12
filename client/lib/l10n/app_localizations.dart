@@ -179,7 +179,7 @@ abstract class AppLocalizations {
   /// No description provided for @analyzeYourXPosts.
   ///
   /// In en, this message translates to:
-  /// **'Analyze your X (Twitter) posts'**
+  /// **'Analyze X posts'**
   String get analyzeYourXPosts;
 
   /// No description provided for @weAnalyzeLocally.

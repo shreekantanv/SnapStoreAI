@@ -199,36 +199,47 @@ class _HomeScreenState extends State<HomeScreen> {
                 else
                   SliverPadding(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    sliver: SliverGrid(
-                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                        childAspectRatio: 0.78,
-                      ),
-                      delegate: SliverChildBuilderDelegate(
-                            (context, idx) {
-                          final tool = filtered[idx];
-                          return Stack(
-                            children: [
-                              // your existing visual card
-                              ToolCard(tool: tool),
+                    sliver: SliverLayoutBuilder(
+                      builder: (context, constraints) {
+                        final cols = _columnsForWidth(context);
+                        // A tidy, uniform card height. Tweak 220–260 to taste.
+                        const tileHeight = 240.0;
+                        const gap = 14.0;
+                        final radius = BorderRadius.circular(16);
 
-                              // full-tile tap layer (always receives taps)
-                              Positioned.fill(
-                                child: Material(
-                                  type: MaterialType.transparency, // needed for InkWell
-                                  child: InkWell(
-                                    onTap: () => _onToolTap(tool),
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
+                        return SliverGrid(
+                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: cols,
+                            crossAxisSpacing: gap,
+                            mainAxisSpacing: gap,
+                            mainAxisExtent: tileHeight, // <- keeps rows perfectly aligned
+                          ),
+                          delegate: SliverChildBuilderDelegate(
+                                (context, idx) {
+                              final tool = filtered[idx];
+                              return ClipRRect(
+                                borderRadius: radius, // ensures overlay/tile share same rounding
+                                child: Stack(
+                                  fit: StackFit.expand,
+                                  children: [
+                                    // Your visual card
+                                    ToolCard(tool: tool),
+
+                                    // Full-tile tap layer
+                                    Material(
+                                      type: MaterialType.transparency,
+                                      child: InkWell(
+                                        onTap: () => _onToolTap(tool),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                        childCount: filtered.length,
-                      ),
+                              );
+                            },
+                            childCount: filtered.length,
+                          ),
+                        );
+                      },
                     ),
                   ),
                 const SliverToBoxAdapter(child: SizedBox(height: 84)), // bottom padding
@@ -238,6 +249,14 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  // 1) helper: pick a good column count for the screen width
+  int _columnsForWidth(BuildContext context) {
+    final w = MediaQuery.of(context).size.width;
+    if (w >= 1100) return 4;
+    if (w >= 750) return 3;
+    return 2;
   }
 }
 

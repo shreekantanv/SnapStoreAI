@@ -1,4 +1,5 @@
 // lib/tools/political_leaning_analyzer.dart
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:client/l10n/app_localizations.dart';
 import 'package:client/models/topic_tag.dart';
@@ -23,71 +24,237 @@ class _PoliticalLeaningEntryScreenState extends State<PoliticalLeaningEntryScree
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.politicalLeaningAnalyzer),
         centerTitle: true,
       ),
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-        child: Column(
-          children: [
-            Expanded(
-              child: Card(
-                child: Center(
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, c) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 720),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        width: 140, height: 140,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(20),
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF1C2835), Color(0xFF0E1318)],
-                            begin: Alignment.topLeft, end: Alignment.bottomRight,
-                          ),
-                        ),
-                        child: const Icon(Icons.scale_rounded, size: 84),
+                      // Hero / info card (visual-only changes)
+                      _GlassHero(
+                        title: l10n.analyzeYourXPosts,
+                        subtitle: '',
                       ),
                       const SizedBox(height: 16),
-                      Text(l10n.analyzeYourXPosts,
-                          style: Theme.of(context).textTheme.titleMedium),
-                      const SizedBox(height: 6),
+                      // Handle input (visual-only changes)
+                      TextField(
+                        controller: _handleCtrl,
+                        textInputAction: TextInputAction.done,
+                        autocorrect: false,
+                        decoration: InputDecoration(
+                          hintText: l10n.socialMediaHandle,
+                          prefixIcon: const Icon(Icons.alternate_email_rounded),
+                          filled: true,
+                          fillColor: cs.surfaceVariant.withOpacity(0.22),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                          enabledBorder: _roundedBorder(Theme.of(context).dividerColor.withOpacity(0.18)),
+                          focusedBorder: _roundedBorder(cs.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
+                      // CTA button (keeps same onPressed behavior)
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: cs.primary,
+                            foregroundColor: cs.onPrimary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                            elevation: 2,
+                          ),
+                          onPressed: () {
+                            final handle = _handleCtrl.text.trim().isEmpty ? '@demo' : _handleCtrl.text.trim();
+                            Navigator.of(context).push(MaterialPageRoute(
+                              builder: (_) => AnalysisInProgressScreen(handle: handle),
+                            ));
+                          },
+                          child: Text(
+                            l10n.analyze2Credits
+                                .replaceAll('(', '• ')
+                                .replaceAll(')', ''),
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Privacy note
                       Text(
                         l10n.weAnalyzeLocally,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Color(0xFF8DA0AE)),
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.65),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: _handleCtrl,
-              decoration: InputDecoration(
-                hintText: l10n.socialMediaHandle,
-                prefixIcon: const Icon(Icons.alternate_email_rounded),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  OutlineInputBorder _roundedBorder(Color color) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(14),
+    borderSide: BorderSide(color: color, width: 1),
+  );
+}
+
+class _GlassHero extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  const _GlassHero({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(22),
+      child: Stack(
+        children: [
+          // Soft background shapes
+          Positioned(right: -28, top: -28, child: _Blob(color: cs.primary, size: 160, opacity: 0.18)),
+          Positioned(left: -36, bottom: -36, child: _Blob(color: cs.secondary, size: 180, opacity: 0.16)),
+
+          // Glass overlay
+          BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 22, sigmaY: 22),
+            child: Container(
+              height: 200,
+              decoration: BoxDecoration(
+                color: cs.surface.withOpacity(0.35),
+                border: Border.all(color: cs.outline.withOpacity(0.10)),
+                borderRadius: BorderRadius.circular(22),
               ),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: cs.primary, foregroundColor: cs.onPrimary,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 18),
+                child: Row(
+                  children: [
+                    _IconTile(),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            subtitle,
+                            textAlign: TextAlign.center,
+                            style: tt.bodyMedium?.copyWith(color: cs.onSurface.withOpacity(0.75)),
+                          ),
+                          const SizedBox(height: 14),
+                          // Privacy chips
+                          Wrap(
+                            spacing: 8,
+                            alignment: WrapAlignment.center,
+                            children: [
+                              
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                onPressed: () {
-                  final handle = _handleCtrl.text.trim().isEmpty ? '@demo' : _handleCtrl.text.trim();
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => AnalysisInProgressScreen(handle: handle),
-                  ));
-                },
-                child: Text(l10n.analyze2Credits),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _IconTile extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      width: 104,
+      height: 104,
+      decoration: BoxDecoration(
+        color: cs.surfaceVariant.withOpacity(0.45),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: cs.outline.withOpacity(0.12)),
+      ),
+      child: Icon(Icons.balance_rounded, size: 52, color: cs.onSurface.withOpacity(0.9)),
+    );
+  }
+}
+
+class _Chip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _Chip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: cs.surfaceVariant.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: cs.outline.withOpacity(0.14)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: cs.onSurface.withOpacity(0.85)),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: cs.onSurface.withOpacity(0.85),
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Blob extends StatelessWidget {
+  final Color color;
+  final double size;
+  final double opacity;
+  const _Blob({required this.color, required this.size, required this.opacity});
+
+  @override
+  Widget build(BuildContext context) {
+    return IgnorePointer(
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: color.withOpacity(opacity),
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(opacity),
+              blurRadius: size / 1.7,
+              spreadRadius: size / 6,
             ),
           ],
         ),
@@ -95,6 +262,8 @@ class _PoliticalLeaningEntryScreenState extends State<PoliticalLeaningEntryScree
     );
   }
 }
+
+/* ------------------------------ Analysis In Progress ------------------------------ */
 
 class AnalysisInProgressScreen extends StatefulWidget {
   final String handle;
@@ -160,12 +329,12 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
             Text(
               l10n.thisMayTakeAMoment,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF8A97A5)),
+              style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
             ),
             const SizedBox(height: 28),
             Align(
               alignment: Alignment.centerLeft,
-              child: Text(l10n.reviewingPosts, style: const TextStyle(color: Color(0xFF9AA6B2))),
+              child: Text(l10n.reviewingPosts, style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
             ),
             const SizedBox(height: 10),
             ClipRRect(
@@ -173,7 +342,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
               child: LinearProgressIndicator(
                 value: _p,
                 minHeight: 10,
-                backgroundColor: const Color(0xFF1A2430),
+                backgroundColor: cs.surfaceVariant.withOpacity(0.25),
                 color: cs.primary,
               ),
             ),
@@ -229,11 +398,11 @@ class ResultsScreen extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    Text(l10n.left,  style: const TextStyle(color: Color(0xFF9AA6B2))),
+                    Text(l10n.left,  style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
                     const Spacer(),
-                    Text(l10n.center,style: const TextStyle(color: Color(0xFF9AA6B2))),
+                    Text(l10n.center,style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
                     const Spacer(),
-                    Text(l10n.right, style: const TextStyle(color: Color(0xFF9AA6B2))),
+                    Text(l10n.right, style: TextStyle(color: cs.onSurface.withOpacity(0.6))),
                   ],
                 ),
               ],
@@ -253,7 +422,7 @@ class ResultsScreen extends StatelessWidget {
           const SizedBox(height: 12),
           _Section(
             title: l10n.summary,
-            child: Text(summary, style: const TextStyle(color: Color(0xFFB6C2CD))),
+            child: Text(summary, style: TextStyle(color: cs.onSurface.withOpacity(0.8))),
           ),
           const SizedBox(height: 16),
           ElevatedButton(
@@ -267,7 +436,9 @@ class ResultsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           OutlinedButton(
-            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const PoliticalLeaningEntryScreen()),
+            ),
             child: Text(l10n.analyzeAgain),
           ),
           const SizedBox(height: 10),
@@ -275,7 +446,7 @@ class ResultsScreen extends StatelessWidget {
             onPressed: () => showModalBottomSheet(
               context: context,
               isScrollControlled: true,
-              backgroundColor: const Color(0xFF0F151C),
+              backgroundColor: Theme.of(context).colorScheme.surface,
               shape: const RoundedRectangleBorder(
                 borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               ),
@@ -307,8 +478,14 @@ class TopicBreakdownSheet extends StatelessWidget {
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         child: Column(
           children: [
-            Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: const Color(0xFF253241), borderRadius: BorderRadius.circular(4))),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: cs.outline.withOpacity(0.35),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
             const SizedBox(height: 10),
             Align(
               alignment: Alignment.centerLeft,
@@ -341,14 +518,13 @@ class _TopicTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF101923),
+        color: cs.surfaceVariant.withOpacity(0.25),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF1D2733)),
+        border: Border.all(color: cs.outline.withOpacity(0.14)),
       ),
       child: Row(
         children: [
@@ -360,7 +536,10 @@ class _TopicTile extends StatelessWidget {
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                 const SizedBox(height: 2),
-                Text(tag == TopicTag.progressive ? l10n.progressive : l10n.conservative, style: const TextStyle(color: Color(0xFF7F8B97))),
+                Text(
+                  tag == TopicTag.progressive ? 'Progressive' : 'Conservative',
+                  style: TextStyle(color: cs.onSurface.withOpacity(0.65)),
+                ),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -368,7 +547,7 @@ class _TopicTile extends StatelessWidget {
                     value: score,
                     minHeight: 8,
                     color: cs.primary,
-                    backgroundColor: const Color(0xFF1B2430),
+                    backgroundColor: cs.surfaceVariant.withOpacity(0.25),
                   ),
                 ),
               ],
@@ -381,8 +560,10 @@ class _TopicTile extends StatelessWidget {
 
   IconData _iconFor(TopicTag tag) {
     switch (tag) {
-      case TopicTag.progressive: return Icons.eco_rounded;
-      case TopicTag.conservative: return Icons.shield_rounded;
+      case TopicTag.progressive:
+        return Icons.eco_rounded;
+      case TopicTag.conservative:
+        return Icons.shield_rounded;
     }
   }
 }
@@ -395,7 +576,11 @@ class _Section extends StatelessWidget {
   const _Section({required this.title, required this.child});
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Card(
+      elevation: 0,
+      color: cs.surfaceVariant.withOpacity(0.18),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
         child: Column(
@@ -416,12 +601,17 @@ class SpectrumBar extends StatelessWidget {
   const SpectrumBar({super.key, required this.value});
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
       height: 14,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4FC3F7), Color(0xFF9FA8DA), Color(0xFFFFAB91)],
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFF4FC3F7),
+            cs.primary.withOpacity(0.6),
+            const Color(0xFFFFAB91),
+          ],
         ),
       ),
       child: Stack(
@@ -429,9 +619,11 @@ class SpectrumBar extends StatelessWidget {
           Align(
             alignment: Alignment(-1.0 + (value * 2), 0),
             child: Container(
-              width: 3, height: 22,
+              width: 3,
+              height: 22,
               decoration: BoxDecoration(
-                color: Colors.white, borderRadius: BorderRadius.circular(2),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(2),
                 boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 4, offset: Offset(0, 1))],
               ),
             ),
@@ -447,12 +639,13 @@ class KeywordCloud extends StatelessWidget {
   const KeywordCloud({super.key, required this.words});
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return AspectRatio(
       aspectRatio: 1,
       child: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           shape: BoxShape.circle,
-          gradient: RadialGradient(colors: [Color(0xFF17202A), Color(0xFF0E141B)]),
+          gradient: RadialGradient(colors: [cs.surfaceVariant.withOpacity(0.35), cs.surface]),
         ),
         padding: const EdgeInsets.all(16),
         child: Center(
@@ -465,7 +658,7 @@ class KeywordCloud extends StatelessWidget {
                 w.toUpperCase(),
                 style: TextStyle(
                   fontSize: 10.0 + (w.length % 6) * 2.0,
-                  color: Colors.white.withOpacity(0.85),
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.85),
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0.4,
                 ),
@@ -483,14 +676,16 @@ class _Badge extends StatelessWidget {
   const _Badge({required this.icon});
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      width: 44, height: 44,
+      width: 44,
+      height: 44,
       decoration: BoxDecoration(
-        color: const Color(0xFF0E1822),
-        border: Border.all(color: const Color(0xFF1E2A36)),
+        color: cs.surfaceVariant.withOpacity(0.25),
+        border: Border.all(color: cs.outline.withOpacity(0.14)),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, size: 22, color: const Color(0xFF99A8B5)),
+      child: Icon(icon, size: 22, color: cs.onSurface.withOpacity(0.7)),
     );
   }
 }

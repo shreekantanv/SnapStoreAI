@@ -48,7 +48,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get politicalLeaningAnalyzer => 'Political Leaning Analyzer';
 
   @override
-  String get analyzeYourXPosts => 'Analyze your X (Twitter) posts';
+  String get analyzeYourXPosts => 'Analyze X posts';
 
   @override
   String get weAnalyzeLocally =>
