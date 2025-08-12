@@ -1,5 +1,7 @@
 // lib/tools/political_leaning_analyzer.dart
 import 'package:flutter/material.dart';
+import 'package:client/l10n/app_localizations.dart';
+import 'package:client/models/topic_tag.dart';
 
 class PoliticalLeaningEntryScreen extends StatefulWidget {
   const PoliticalLeaningEntryScreen({super.key});
@@ -19,10 +21,11 @@ class _PoliticalLeaningEntryScreenState extends State<PoliticalLeaningEntryScree
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Political Leaning Analyzer'),
+        title: Text(l10n.politicalLeaningAnalyzer),
         centerTitle: true,
       ),
       body: Padding(
@@ -47,13 +50,13 @@ class _PoliticalLeaningEntryScreenState extends State<PoliticalLeaningEntryScree
                         child: const Icon(Icons.scale_rounded, size: 84),
                       ),
                       const SizedBox(height: 16),
-                      Text('Analyze your X (Twitter) posts',
+                      Text(l10n.analyzeYourXPosts,
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 6),
-                      const Text(
-                        'We analyze locally/securely and do not store your data.',
+                      Text(
+                        l10n.weAnalyzeLocally,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Color(0xFF8DA0AE)),
+                        style: const TextStyle(color: Color(0xFF8DA0AE)),
                       ),
                     ],
                   ),
@@ -63,9 +66,9 @@ class _PoliticalLeaningEntryScreenState extends State<PoliticalLeaningEntryScree
             const SizedBox(height: 12),
             TextField(
               controller: _handleCtrl,
-              decoration: const InputDecoration(
-                hintText: 'Social Media Handle (e.g., @username)',
-                prefixIcon: Icon(Icons.alternate_email_rounded),
+              decoration: InputDecoration(
+                hintText: l10n.socialMediaHandle,
+                prefixIcon: const Icon(Icons.alternate_email_rounded),
               ),
             ),
             const SizedBox(height: 12),
@@ -83,7 +86,7 @@ class _PoliticalLeaningEntryScreenState extends State<PoliticalLeaningEntryScree
                     builder: (_) => AnalysisInProgressScreen(handle: handle),
                   ));
                 },
-                child: const Text('Analyze (2 Credits)'),
+                child: Text(l10n.analyze2Credits),
               ),
             ),
           ],
@@ -121,14 +124,14 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
           summary:
           'You lean center‑left with emphasis on social issues and progressive policies.',
           topicBreakdown: const [
-            TopicScore('Climate Change', 'Progressive', 0.72),
-            TopicScore('Tax Cuts', 'Conservative', 0.48),
-            TopicScore('Healthcare Reform', 'Progressive', 0.64),
-            TopicScore('Immigration Policy', 'Conservative', 0.51),
-            TopicScore('Education Funding', 'Progressive', 0.58),
-            TopicScore('Gun Rights', 'Conservative', 0.43),
-            TopicScore('Social Security', 'Progressive', 0.55),
-            TopicScore('National Defense', 'Conservative', 0.50),
+            TopicScore('Climate Change', TopicTag.progressive, 0.72),
+            TopicScore('Tax Cuts', TopicTag.conservative, 0.48),
+            TopicScore('Healthcare Reform', TopicTag.progressive, 0.64),
+            TopicScore('Immigration Policy', TopicTag.conservative, 0.51),
+            TopicScore('Education Funding', TopicTag.progressive, 0.58),
+            TopicScore('Gun Rights', TopicTag.conservative, 0.43),
+            TopicScore('Social Security', TopicTag.progressive, 0.55),
+            TopicScore('National Defense', TopicTag.conservative, 0.50),
           ],
           keywordClouds: const [
             ['climate', 'renewables', 'emissions', 'policy', 'paris'],
@@ -141,27 +144,28 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Analysis in Progress'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.analysisInProgress), centerTitle: true),
       body: Padding(
         padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
         child: Column(
           children: [
             const SizedBox(height: 8),
-            Text('Analyzing your social media activity',
+            Text(l10n.analyzingYourSocialMedia,
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 12),
-            const Text(
-              'This may take a moment. Your data remains private and is not stored.',
+            Text(
+              l10n.thisMayTakeAMoment,
               textAlign: TextAlign.center,
-              style: TextStyle(color: Color(0xFF8A97A5)),
+              style: const TextStyle(color: Color(0xFF8A97A5)),
             ),
             const SizedBox(height: 28),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
-              child: Text('Reviewing posts...', style: TextStyle(color: Color(0xFF9AA6B2))),
+              child: Text(l10n.reviewingPosts, style: const TextStyle(color: Color(0xFF9AA6B2))),
             ),
             const SizedBox(height: 10),
             ClipRRect(
@@ -174,7 +178,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
               ),
             ),
             const Spacer(),
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l10n.cancel)),
           ],
         ),
       ),
@@ -186,7 +190,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
 
 class TopicScore {
   final String topic;
-  final String tag;   // e.g., Progressive / Conservative
+  final TopicTag tag;   // e.g., Progressive / Conservative
   final double score; // 0..1
   const TopicScore(this.topic, this.tag, this.score);
 }
@@ -209,26 +213,27 @@ class ResultsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Analysis Results'), centerTitle: true),
+      appBar: AppBar(title: Text(l10n.analysisResults), centerTitle: true),
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
         children: [
           _Section(
-            title: 'Political Spectrum',
+            title: l10n.politicalSpectrum,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 SpectrumBar(value: leaning),
                 const SizedBox(height: 10),
                 Row(
-                  children: const [
-                    Text('Left',  style: TextStyle(color: Color(0xFF9AA6B2))),
-                    Spacer(),
-                    Text('Center',style: TextStyle(color: Color(0xFF9AA6B2))),
-                    Spacer(),
-                    Text('Right', style: TextStyle(color: Color(0xFF9AA6B2))),
+                  children: [
+                    Text(l10n.left,  style: const TextStyle(color: Color(0xFF9AA6B2))),
+                    const Spacer(),
+                    Text(l10n.center,style: const TextStyle(color: Color(0xFF9AA6B2))),
+                    const Spacer(),
+                    Text(l10n.right, style: const TextStyle(color: Color(0xFF9AA6B2))),
                   ],
                 ),
               ],
@@ -236,7 +241,7 @@ class ResultsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           _Section(
-            title: 'Keyword Clouds',
+            title: l10n.keywordClouds,
             child: Row(
               children: [
                 Expanded(child: KeywordCloud(words: keywordClouds[0])),
@@ -247,7 +252,7 @@ class ResultsScreen extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           _Section(
-            title: 'Summary',
+            title: l10n.summary,
             child: Text(summary, style: const TextStyle(color: Color(0xFFB6C2CD))),
           ),
           const SizedBox(height: 16),
@@ -255,17 +260,15 @@ class ResultsScreen extends StatelessWidget {
             onPressed: () {
               // TODO: implement share/export
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Sharing not implemented in demo.')),
+                SnackBar(content: Text(l10n.sharingNotImplemented)),
               );
             },
-            child: const Text('Share Result'),
+            child: Text(l10n.shareResult),
           ),
           const SizedBox(height: 10),
           OutlinedButton(
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => AnalysisInProgressScreen(handle: handle)),
-            ),
-            child: const Text('Analyze Again'),
+            onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+            child: Text(l10n.analyzeAgain),
           ),
           const SizedBox(height: 10),
           OutlinedButton(
@@ -278,7 +281,7 @@ class ResultsScreen extends StatelessWidget {
               ),
               builder: (_) => TopicBreakdownSheet(items: topicBreakdown),
             ),
-            child: const Text('See Topic Breakdown'),
+            child: Text(l10n.seeTopicBreakdown),
           ),
         ],
       ),
@@ -294,6 +297,7 @@ class TopicBreakdownSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return DraggableScrollableSheet(
       expand: false,
@@ -306,9 +310,9 @@ class TopicBreakdownSheet extends StatelessWidget {
             Container(width: 40, height: 4,
                 decoration: BoxDecoration(color: const Color(0xFF253241), borderRadius: BorderRadius.circular(4))),
             const SizedBox(height: 10),
-            const Align(
+            Align(
               alignment: Alignment.centerLeft,
-              child: Text('Topics', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+              child: Text(l10n.topics, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
             ),
             const SizedBox(height: 8),
             Expanded(
@@ -332,11 +336,12 @@ class TopicBreakdownSheet extends StatelessWidget {
 class _TopicTile extends StatelessWidget {
   final double score;
   final String title;
-  final String tag;
+  final TopicTag tag;
   const _TopicTile({required this.score, required this.title, required this.tag});
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
@@ -355,7 +360,7 @@ class _TopicTile extends StatelessWidget {
               children: [
                 Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
                 const SizedBox(height: 2),
-                Text(tag, style: const TextStyle(color: Color(0xFF7F8B97))),
+                Text(tag == TopicTag.progressive ? l10n.progressive : l10n.conservative, style: const TextStyle(color: Color(0xFF7F8B97))),
                 const SizedBox(height: 8),
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
@@ -374,11 +379,10 @@ class _TopicTile extends StatelessWidget {
     );
   }
 
-  IconData _iconFor(String tag) {
-    switch (tag.toLowerCase()) {
-      case 'progressive': return Icons.eco_rounded;
-      case 'conservative': return Icons.shield_rounded;
-      default: return Icons.balance_rounded;
+  IconData _iconFor(TopicTag tag) {
+    switch (tag) {
+      case TopicTag.progressive: return Icons.eco_rounded;
+      case TopicTag.conservative: return Icons.shield_rounded;
     }
   }
 }
