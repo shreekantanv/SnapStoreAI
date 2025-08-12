@@ -5,9 +5,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import 'package:client/l10n/app_localizations.dart';
 import 'package:client/models/topic_tag.dart';
+import 'package:client/providers/firestore_provider.dart';
+import 'package:client/services/api_service.dart';
 
 class PoliticalLeaningEntryScreen extends StatefulWidget {
   const PoliticalLeaningEntryScreen({super.key});
@@ -310,9 +312,12 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
       return;
     }
 
+    final firestoreProvider = context.read<FirestoreProvider>();
+    final apiService = context.read<ApiService>();
+
     // Check for premium status and BYOK
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-    final userData = userDoc.data();
+    final userDoc = await firestoreProvider.getUser(user.uid);
+    final userData = userDoc.data() as Map<String, dynamic>?;
     final isPremium = userData?['isPremium'] == true &&
         (userData?['premiumExpires'] as Timestamp).toDate().isAfter(DateTime.now());
 
@@ -322,7 +327,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
     if (isPremium && apiKey != null && apiKey.isNotEmpty) {
       await _runAnalysisWithClientSideApiKey(apiKey);
     } else {
-      await _runAnalysisWithBackend();
+      await _runAnalysisWithBackend(apiService);
     }
   }
 
@@ -338,7 +343,7 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
       "keywordClouds": [[], []]
     };
     final results = _parseResults(data);
-    _logActivity(results.summary);
+    await _logActivity(results.summary);
     if (mounted) {
       Navigator.of(context).pushReplacement(MaterialPageRoute(
         builder: (_) => ResultsScreen(
@@ -352,47 +357,29 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
     }
   }
 
-  Future<void> _runAnalysisWithBackend() async {
+  Future<void> _runAnalysisWithBackend(ApiService apiService) async {
     setState(() => _status = 'Analyzing with credits...');
-    final user = FirebaseAuth.instance.currentUser!;
-    final idToken = await user.getIdToken();
-    const url = 'https://us-central1-snapsolveai-b74fc.cloudfunctions.net/api/runTool';
-
     try {
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-        body: jsonEncode({
-          'toolId': 'political_leaning_analyzer',
-          'model': 'grok-1',
-          'prompt': widget.handle,
-        }),
+      final response = await apiService.runTool(
+        'political_leaning_analyzer',
+        'grok-1',
+        widget.handle,
       );
 
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body)['result'];
-        final results = _parseResults(data);
-        _logActivity(results.summary);
-        Navigator.of(context).pushReplacement(MaterialPageRoute(
-          builder: (_) => ResultsScreen(
-            handle: widget.handle,
-            leaning: results.leaning,
-            summary: results.summary,
-            topicBreakdown: results.topicBreakdown,
-            keywordClouds: results.keywordClouds,
-          ),
-        ));
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: ${response.reasonPhrase}')),
-        );
-        Navigator.pop(context);
-      }
+      final data = response['result'];
+      final results = _parseResults(data);
+      await _logActivity(results.summary);
+      Navigator.of(context).pushReplacement(MaterialPageRoute(
+        builder: (_) => ResultsScreen(
+          handle: widget.handle,
+          leaning: results.leaning,
+          summary: results.summary,
+          topicBreakdown: results.topicBreakdown,
+          keywordClouds: results.keywordClouds,
+        ),
+      ));
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -406,21 +393,13 @@ class _AnalysisInProgressScreenState extends State<AnalysisInProgressScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final idToken = await user.getIdToken();
-    const url = 'https://us-central1-snapsolveai-b74fc.cloudfunctions.net/api/logActivity';
-
+    final firestoreProvider = context.read<FirestoreProvider>();
     try {
-      await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $idToken',
-        },
-        body: jsonEncode({
-          'toolId': 'political_leaning_analyzer',
-          'prompt': widget.handle,
-          'result': summary,
-        }),
+      await firestoreProvider.logActivity(
+        user.uid,
+        'political_leaning_analyzer',
+        widget.handle,
+        summary,
       );
     } catch (e) {
       debugPrint('Error logging activity: $e');

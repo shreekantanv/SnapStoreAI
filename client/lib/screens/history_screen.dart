@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:client/providers/firestore_provider.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -13,6 +15,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
+    final firestoreProvider = context.watch<FirestoreProvider>();
 
     if (user == null) {
       return Scaffold(
@@ -26,11 +29,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         title: const Text('History'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('user_activity')
-            .where('uid', isEqualTo: user.uid)
-            .orderBy('ts', descending: true)
-            .snapshots(),
+        stream: firestoreProvider.getActivity(user.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

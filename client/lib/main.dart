@@ -5,8 +5,10 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart'; // generated via flutterfire CLI
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
+import 'providers/firestore_provider.dart';
 import 'providers/tool_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/api_service.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -31,6 +33,8 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         Provider(create: (_) => ToolProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        Provider(create: (_) => FirestoreProvider()),
+        Provider(create: (_) => ApiService()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
