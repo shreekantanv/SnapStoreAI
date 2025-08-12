@@ -9,77 +9,60 @@ class HowItWorksCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('How it works', style: theme.textTheme.titleMedium),
+        Text(
+          'How it works',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
         const SizedBox(height: 16),
-        CarouselSlider.builder(
-          itemCount: steps.length,
+        CarouselSlider(
           options: CarouselOptions(
-            // remove fixed height; let slides size themselves
+            height: 200,
             enlargeCenterPage: true,
             autoPlay: true,
+            aspectRatio: 16 / 9,
             autoPlayCurve: Curves.fastOutSlowIn,
             enableInfiniteScroll: true,
             autoPlayAnimationDuration: const Duration(milliseconds: 800),
-            viewportFraction: 0.82,
+            viewportFraction: 0.8,
           ),
-          itemBuilder: (context, index, realIdx) {
-            final step = steps[index];
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6.0),
-              child: AspectRatio(
-                aspectRatio: 16 / 9, // keeps a stable height across devices
-                child: Container(
+          items: steps.map((step) {
+            return Builder(
+              builder: (BuildContext context) {
+                return Container(
+                  width: MediaQuery.of(context).size.width,
+                  margin: const EdgeInsets.symmetric(horizontal: 5.0),
                   decoration: BoxDecoration(
-                    color: theme.cardColor,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: theme.dividerColor.withOpacity(0.12)),
+                    color: Theme.of(context).cardColor,
+                    borderRadius: BorderRadius.circular(8.0),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        // Image gets the available top space
-                        Expanded(
-                          child: Center(
-                            child: Image.asset(
-                              step.imageUrl,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        // Title stays on one or two lines max
+                        Image.asset(step.imageUrl, height: 80),
+                        const SizedBox(height: 12),
                         Text(
                           step.title,
-                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                          style: Theme.of(context).textTheme.titleSmall,
                           textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        // Description flexes last; ellipsizes if tight
-                        Flexible(
-                          child: Text(
-                            step.description,
-                            style: theme.textTheme.bodySmall,
-                            textAlign: TextAlign.center,
-                            maxLines: 3,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                        Text(
+                          step.description,
+                          style: Theme.of(context).textTheme.bodySmall,
+                          textAlign: TextAlign.center,
                         ),
                       ],
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             );
-          },
+          }).toList(),
         ),
       ],
     );

@@ -1,5 +1,3 @@
-import 'how_it_works_step.dart';
-
 class InputField {
   final String id;
   final String type;
@@ -23,6 +21,8 @@ class InputField {
   }
 }
 
+import 'package:client/models/how_it_works_step.dart';
+import 'package:client/models/feature_pill.dart';
 
 class Tool {
   final String id;
@@ -36,6 +36,7 @@ class Tool {
   final String? privacyNote;
   final List<InputField> inputFields;
   final List<HowItWorksStep> howItWorks;
+  final List<FeaturePill> featurePills;
 
   Tool({
     required this.id,
@@ -49,6 +50,7 @@ class Tool {
     this.privacyNote,
     required this.inputFields,
     this.howItWorks = const [],
+    this.featurePills = const [],
   });
 
   factory Tool.fromJson(Map<String, dynamic> json, String id) {
@@ -68,6 +70,10 @@ class Tool {
           [],
       howItWorks: (json['howItWorks'] as List<dynamic>?)
               ?.map((e) => HowItWorksStep.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      featurePills: (json['featurePills'] as List<dynamic>?)
+              ?.map((e) => FeaturePill.fromJson(e as Map<String, dynamic>))
               .toList() ??
           [],
     );
