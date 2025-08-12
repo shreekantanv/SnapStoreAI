@@ -19,7 +19,7 @@ class ToolCard extends StatelessWidget {
         child: Column(
           children: [
             Expanded(
-              child: Image.network(
+              child: Image.asset(
                 tool.imageUrl,
                 fit: BoxFit.cover,
                 width: double.infinity,
