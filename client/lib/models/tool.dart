@@ -21,6 +21,8 @@ class InputField {
   }
 }
 
+import 'package:client/models/how_it_works_step.dart';
+
 class Tool {
   final String id;
   final String title;
@@ -32,6 +34,7 @@ class Tool {
   final int creditCost;
   final String? privacyNote;
   final List<InputField> inputFields;
+  final List<HowItWorksStep> howItWorks;
 
   Tool({
     required this.id,
@@ -44,6 +47,7 @@ class Tool {
     required this.creditCost,
     this.privacyNote,
     required this.inputFields,
+    this.howItWorks = const [],
   });
 
   factory Tool.fromJson(Map<String, dynamic> json, String id) {
@@ -58,8 +62,12 @@ class Tool {
       creditCost: json['creditCost'] as int? ?? 1,
       privacyNote: json['privacyNote'] as String?,
       inputFields: (json['inputFields'] as List<dynamic>?)
-          ?.map((e) => InputField.fromJson(e as Map<String, dynamic>))
-          .toList() ??
+              ?.map((e) => InputField.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      howItWorks: (json['howItWorks'] as List<dynamic>?)
+              ?.map((e) => HowItWorksStep.fromJson(e as Map<String, dynamic>))
+              .toList() ??
           [],
     );
   }

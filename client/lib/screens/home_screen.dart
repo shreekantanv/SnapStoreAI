@@ -1,5 +1,5 @@
 import 'package:client/screens/settings_screen.dart';
-import 'package:client/screens/tools/tool_entry_screen.dart';
+import 'package:client/screens/tool_entry_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

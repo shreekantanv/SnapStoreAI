@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:client/models/tool.dart';
 import 'package:client/widgets/dynamic_input_widget.dart';
+import 'package:client/widgets/how_it_works_carousel.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -51,6 +52,12 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
             if (widget.tool.description != null) ...[
               Text(widget.tool.description!,
                   style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 24),
+            ],
+
+            // How it works
+            if (widget.tool.howItWorks.isNotEmpty) ...[
+              HowItWorksCarousel(steps: widget.tool.howItWorks),
               const SizedBox(height: 24),
             ],
 
