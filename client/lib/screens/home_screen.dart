@@ -1,6 +1,4 @@
-import 'package:client/screens/history_screen.dart';
 import 'package:client/screens/settings_screen.dart';
-import 'package:client/screens/tools/tool_entry_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -32,9 +30,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onToolTap(Tool tool) {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => ToolEntryScreen(tool: tool)),
-    );
+
   }
 
   @override
@@ -79,7 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (i == 4) {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
               } else if (i == 2) {
-                Navigator.of(context).push(MaterialPageRoute(builder: (_) => const HistoryScreen()));
+                
               } else {
                 setState(() => _currentNavIndex = i);
               }
