@@ -1,4 +1,5 @@
 import 'package:client/screens/settings_screen.dart';
+import 'package:client/screens/tool_entry_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,7 +31,11 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onToolTap(Tool tool) {
-
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ToolEntryScreen(tool: tool),
+      ),
+    );
   }
 
   @override
