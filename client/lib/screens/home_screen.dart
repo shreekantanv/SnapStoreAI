@@ -1,12 +1,13 @@
+import 'package:client/screens/tools/political_leaning_analyzer.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../models/tool.dart';
 import '../providers/tool_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
 import '../widgets/tool_widget.dart';
+import '../models/tool.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/home';
@@ -26,6 +27,24 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
+  }
+
+  void _onToolTap(Tool tool) {
+    // Prefer routing by stable tool.id
+    final id = (tool.id ?? '').trim();
+    debugPrint('Tapped tool -> id=${id}, title=${tool.title}');
+    switch (id) {
+      case 'IRVPDzBQqV5qVFLJYheU':
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const PoliticalLeaningEntryScreen()),
+        );
+        return;
+    }
+
+    // Default (optional)
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Coming soon')),
+    );
   }
 
   @override
@@ -171,7 +190,7 @@ class _HomeScreenState extends State<HomeScreen> {
               if (filtered.isEmpty)
                 SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _EmptyState(
+                  child: const _EmptyState(
                     title: 'No tools found',
                     subtitle: 'Try a different keyword or category.',
                   ),
@@ -184,10 +203,29 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisCount: 2,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
-                      childAspectRatio: 0.78, // taller cards, more visual
+                      childAspectRatio: 0.78,
                     ),
                     delegate: SliverChildBuilderDelegate(
-                          (context, idx) => ToolCard(tool: filtered[idx]),
+                          (context, idx) {
+                        final tool = filtered[idx];
+                        return Stack(
+                          children: [
+                            // your existing visual card
+                            ToolCard(tool: tool),
+
+                            // full-tile tap layer (always receives taps)
+                            Positioned.fill(
+                              child: Material(
+                                type: MaterialType.transparency, // needed for InkWell
+                                child: InkWell(
+                                  onTap: () => _onToolTap(tool),
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                       childCount: filtered.length,
                     ),
                   ),
