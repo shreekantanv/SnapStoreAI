@@ -1,53 +1,36 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:client/providers/auth_provider.dart';
-import 'package:client/providers/firestore_provider.dart';
+import 'package:client/providers/history_provider.dart';
 import 'package:client/screens/tools/political_leaning_analyzer.dart';
 
-class HistoryScreen extends StatefulWidget {
+class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
 
   @override
-  State<HistoryScreen> createState() => _HistoryScreenState();
-}
-
-class _HistoryScreenState extends State<HistoryScreen> {
-  @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final firestoreProvider = context.watch<FirestoreProvider>();
-
-    if (authProvider.user == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('History')),
-        body: const Center(child: Text('Please log in to see your history.')),
-      );
-    }
+    final historyProvider = context.watch<HistoryProvider>();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('History'),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: firestoreProvider.getActivity(authProvider.user!.uid),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+      body: Builder(
+        builder: (context) {
+          if (historyProvider.isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+          if (historyProvider.error != null) {
+            return Center(child: Text('Error: ${historyProvider.error}'));
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          if (historyProvider.activities.isEmpty) {
             return const Center(child: Text('No activity yet.'));
           }
 
-          final activities = snapshot.data!.docs;
-
           return ListView.builder(
-            itemCount: activities.length,
+            itemCount: historyProvider.activities.length,
             itemBuilder: (context, index) {
-              final activity = activities[index].data() as Map<String, dynamic>;
+              final activity = historyProvider.activities[index].data() as Map<String, dynamic>;
               return _HistoryListItem(activity: activity);
             },
           );
