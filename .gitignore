@@ -3,3 +3,5 @@
 /client/linux/runner
 /.idea
 /client/ios/Runner
+/functions/node_modules
+functions/.env*
