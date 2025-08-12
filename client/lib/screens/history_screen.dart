@@ -1,7 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:client/providers/auth_provider.dart';
 import 'package:client/providers/firestore_provider.dart';
 import 'package:client/screens/tools/political_leaning_analyzer.dart';
 
@@ -15,10 +15,10 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
+    final authProvider = context.watch<AuthProvider>();
     final firestoreProvider = context.watch<FirestoreProvider>();
 
-    if (user == null) {
+    if (authProvider.user == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('History')),
         body: const Center(child: Text('Please log in to see your history.')),
@@ -30,7 +30,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         title: const Text('History'),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: firestoreProvider.getActivity(user.uid),
+        stream: firestoreProvider.getActivity(authProvider.user!.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
