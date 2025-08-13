@@ -43,4 +43,78 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get aiToolbox => 'Caja de Herramientas de IA';
+
+  @override
+  String get politicalLeaningAnalyzer => 'Political Leaning Analyzer';
+
+  @override
+  String get analyzeYourXPosts => 'Analyze X posts';
+
+  @override
+  String get weAnalyzeLocally =>
+      'We analyze locally/securely and do not store your data.';
+
+  @override
+  String get socialMediaHandle => 'Social Media Handle (e.g., @username)';
+
+  @override
+  String get analyze2Credits => 'Analyze (2 Credits)';
+
+  @override
+  String get analysisInProgress => 'Analysis in Progress';
+
+  @override
+  String get analyzingYourSocialMedia => 'Analyzing your social media activity';
+
+  @override
+  String get thisMayTakeAMoment =>
+      'This may take a moment. Your data remains private and is not stored.';
+
+  @override
+  String get reviewingPosts => 'Reviewing posts...';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get analysisResults => 'Analysis Results';
+
+  @override
+  String get politicalSpectrum => 'Political Spectrum';
+
+  @override
+  String get left => 'Left';
+
+  @override
+  String get center => 'Center';
+
+  @override
+  String get right => 'Right';
+
+  @override
+  String get keywordClouds => 'Keyword Clouds';
+
+  @override
+  String get summary => 'Summary';
+
+  @override
+  String get sharingNotImplemented => 'Sharing not implemented in demo.';
+
+  @override
+  String get shareResult => 'Share Result';
+
+  @override
+  String get analyzeAgain => 'Analyze Again';
+
+  @override
+  String get seeTopicBreakdown => 'See Topic Breakdown';
+
+  @override
+  String get topics => 'Topics';
+
+  @override
+  String get progressive => 'Progressive';
+
+  @override
+  String get conservative => 'Conservative';
 }

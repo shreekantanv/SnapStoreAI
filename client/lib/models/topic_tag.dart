@@ -1,0 +1,4 @@
+enum TopicTag {
+  progressive,
+  conservative,
+}

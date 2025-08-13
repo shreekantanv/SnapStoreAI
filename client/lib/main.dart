@@ -5,8 +5,11 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart'; // generated via flutterfire CLI
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
+import 'providers/firestore_provider.dart';
+import 'providers/history_provider.dart';
 import 'providers/tool_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/api_service.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -29,8 +32,20 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => ToolProvider()),
+        Provider(create: (_) => ToolProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        Provider(create: (_) => FirestoreProvider()),
+        Provider(create: (_) => ApiService()),
+        ChangeNotifierProxyProvider2<AuthProvider, FirestoreProvider, HistoryProvider>(
+          create: (_) => HistoryProvider(
+            context.read<AuthProvider>(),
+            context.read<FirestoreProvider>(),
+          ),
+          update: (_, auth, firestore, previous) => HistoryProvider(
+            auth,
+            firestore,
+          ),
+        ),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {

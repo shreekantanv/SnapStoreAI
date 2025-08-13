@@ -169,6 +169,150 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'AI Toolbox'**
   String get aiToolbox;
+
+  /// No description provided for @politicalLeaningAnalyzer.
+  ///
+  /// In en, this message translates to:
+  /// **'Political Leaning Analyzer'**
+  String get politicalLeaningAnalyzer;
+
+  /// No description provided for @analyzeYourXPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze X posts'**
+  String get analyzeYourXPosts;
+
+  /// No description provided for @weAnalyzeLocally.
+  ///
+  /// In en, this message translates to:
+  /// **'We analyze locally/securely and do not store your data.'**
+  String get weAnalyzeLocally;
+
+  /// No description provided for @socialMediaHandle.
+  ///
+  /// In en, this message translates to:
+  /// **'Social Media Handle (e.g., @username)'**
+  String get socialMediaHandle;
+
+  /// No description provided for @analyze2Credits.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze (2 Credits)'**
+  String get analyze2Credits;
+
+  /// No description provided for @analysisInProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis in Progress'**
+  String get analysisInProgress;
+
+  /// No description provided for @analyzingYourSocialMedia.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyzing your social media activity'**
+  String get analyzingYourSocialMedia;
+
+  /// No description provided for @thisMayTakeAMoment.
+  ///
+  /// In en, this message translates to:
+  /// **'This may take a moment. Your data remains private and is not stored.'**
+  String get thisMayTakeAMoment;
+
+  /// No description provided for @reviewingPosts.
+  ///
+  /// In en, this message translates to:
+  /// **'Reviewing posts...'**
+  String get reviewingPosts;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @analysisResults.
+  ///
+  /// In en, this message translates to:
+  /// **'Analysis Results'**
+  String get analysisResults;
+
+  /// No description provided for @politicalSpectrum.
+  ///
+  /// In en, this message translates to:
+  /// **'Political Spectrum'**
+  String get politicalSpectrum;
+
+  /// No description provided for @left.
+  ///
+  /// In en, this message translates to:
+  /// **'Left'**
+  String get left;
+
+  /// No description provided for @center.
+  ///
+  /// In en, this message translates to:
+  /// **'Center'**
+  String get center;
+
+  /// No description provided for @right.
+  ///
+  /// In en, this message translates to:
+  /// **'Right'**
+  String get right;
+
+  /// No description provided for @keywordClouds.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyword Clouds'**
+  String get keywordClouds;
+
+  /// No description provided for @summary.
+  ///
+  /// In en, this message translates to:
+  /// **'Summary'**
+  String get summary;
+
+  /// No description provided for @sharingNotImplemented.
+  ///
+  /// In en, this message translates to:
+  /// **'Sharing not implemented in demo.'**
+  String get sharingNotImplemented;
+
+  /// No description provided for @shareResult.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Result'**
+  String get shareResult;
+
+  /// No description provided for @analyzeAgain.
+  ///
+  /// In en, this message translates to:
+  /// **'Analyze Again'**
+  String get analyzeAgain;
+
+  /// No description provided for @seeTopicBreakdown.
+  ///
+  /// In en, this message translates to:
+  /// **'See Topic Breakdown'**
+  String get seeTopicBreakdown;
+
+  /// No description provided for @topics.
+  ///
+  /// In en, this message translates to:
+  /// **'Topics'**
+  String get topics;
+
+  /// No description provided for @progressive.
+  ///
+  /// In en, this message translates to:
+  /// **'Progressive'**
+  String get progressive;
+
+  /// No description provided for @conservative.
+  ///
+  /// In en, this message translates to:
+  /// **'Conservative'**
+  String get conservative;
 }
 
 class _AppLocalizationsDelegate
