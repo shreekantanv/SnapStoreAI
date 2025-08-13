@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:client/screens/tools/tool_result_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'package:client/models/tool.dart';
@@ -6,6 +7,8 @@ import 'package:client/utils/icon_mapper.dart';
 import 'package:client/widgets/dynamic_input_widget.dart';
 import 'package:client/widgets/feature_pill_widget.dart';
 import 'package:client/widgets/how_it_works_carousel.dart';
+
+import '../../models/analysis_result.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -139,12 +142,37 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                         elevation: 2,
                       ),
                       onPressed: () {
-                        final sm = ScaffoldMessenger.of(context);
-                        sm.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Generate button pressed with inputs: $_inputValues',
-                            ),
+                        // Mock data for success state
+                        final successResult = AnalysisResult(
+                          status: AnalysisStatus.success,
+                          subjectImage: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=2535&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                          spectrum: Spectrum(
+                            minLabel: 'Liberal',
+                            maxLabel: 'Conservative',
+                            value: 75,
+                            confidence: 92.5,
+                          ),
+                          alignments: [
+                            ResultAlignment(label: 'Progressive', percent: 42),
+                            ResultAlignment(label: 'Centrist', percent: 35),
+                            ResultAlignment(label: 'Conservative', percent: 23),
+                          ],
+                          keywords: [
+                            KeywordGroup(topic: 'Key Topics', terms: ['Ecomony', 'Healthcare', 'Foreign Policy', 'Environment']),
+                            KeywordGroup(topic: 'Sentiment', terms: ['Optimistic', 'Concerned', 'Hopeful']),
+                          ],
+                          summary: 'The analysis indicates a leaning towards conservative viewpoints, with significant discussion around economic policies and healthcare reform. The overall sentiment is a mix of optimism about the future and concern over current events.',
+                          meta: Meta(
+                            analyzedItemsCount: 128,
+                            timeRange: 'Last 30 days',
+                            modelUsed: 'Model-XYZ-v2.1',
+                          ),
+                        );
+
+                        // Navigate to results screen
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => ResultsScreen(result: successResult),
                           ),
                         );
                       },
