@@ -9,60 +9,80 @@ class HowItWorksCarousel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'How it works',
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
+        Text('How it works', style: theme.textTheme.titleMedium),
         const SizedBox(height: 16),
-        CarouselSlider(
+
+        // Use builder + no fixed height
+        CarouselSlider.builder(
+          itemCount: steps.length,
           options: CarouselOptions(
-            height: 200,
             enlargeCenterPage: true,
             autoPlay: true,
-            aspectRatio: 16 / 9,
             autoPlayCurve: Curves.fastOutSlowIn,
             enableInfiniteScroll: true,
             autoPlayAnimationDuration: const Duration(milliseconds: 800),
-            viewportFraction: 0.8,
+            viewportFraction: 0.82,
           ),
-          items: steps.map((step) {
-            return Builder(
-              builder: (BuildContext context) {
-                return Container(
-                  width: MediaQuery.of(context).size.width,
-                  margin: const EdgeInsets.symmetric(horizontal: 5.0),
+          itemBuilder: (context, index, realIdx) {
+            final step = steps[index];
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 6.0),
+              child: AspectRatio(
+                aspectRatio: 16 / 9, // keeps a stable, overflow-safe height
+                child: Container(
                   decoration: BoxDecoration(
-                    color: Theme.of(context).cardColor,
-                    borderRadius: BorderRadius.circular(8.0),
+                    color: theme.cardColor,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: theme.dividerColor.withOpacity(0.12)),
                   ),
                   child: Padding(
-                    padding: const EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Image.asset(step.imageUrl, height: 80),
-                        const SizedBox(height: 12),
+                        // Image takes remaining space first
+                        Expanded(
+                          child: Center(
+                            child: Image.asset(
+                              step.imageUrl,
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Title — clamp lines
                         Text(
                           step.title,
-                          style: Theme.of(context).textTheme.titleSmall,
+                          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
                           textAlign: TextAlign.center,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          step.description,
-                          style: Theme.of(context).textTheme.bodySmall,
-                          textAlign: TextAlign.center,
+
+                        // Description — flexible + clamped
+                        Flexible(
+                          child: Text(
+                            step.description,
+                            style: theme.textTheme.bodySmall,
+                            textAlign: TextAlign.center,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
                   ),
-                );
-              },
+                ),
+              ),
             );
-          }).toList(),
+          },
         ),
       ],
     );
