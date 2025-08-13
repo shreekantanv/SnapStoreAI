@@ -105,20 +105,30 @@ app.post("/runTool", authenticate, async (req, res) => {
       console.log(`Calling Grok for political analysis of handle: ${prompt}`);
       // In a real implementation, you would make the actual call to the Grok API.
       // const completion = await grok.chat.completions.create({ ... });
-      // For now, we'll use a hardcoded mock response.
+      // For now, we'll use a hardcoded mock response that matches the client's AnalysisResult model.
       aiResponse = {
-        leaning: 0.35, // 0=Left, 0.5=Center, 1=Right
-        summary: "This user leans center-left, with a focus on social justice and environmental policies, based on their recent posts.",
-        topicBreakdown: [
-          { topic: "Climate Change", tag: "progressive", score: 0.82 },
-          { topic: "Economic Policy", tag: "progressive", score: 0.65 },
-          { topic: "Healthcare", tag: "progressive", score: 0.75 },
-          { topic: "Foreign Policy", tag: "conservative", score: 0.55 },
+        subjectImage: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=2535&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+        spectrum: {
+          minLabel: 'Liberal',
+          maxLabel: 'Conservative',
+          value: 75,
+          confidence: 92.5,
+        },
+        alignments: [
+          { label: 'Progressive', percent: 42 },
+          { label: 'Centrist', percent: 35 },
+          { label: 'Conservative', percent: 23 },
         ],
-        keywordClouds: [
-          ["#climateaction", "greennewdeal", "solar", "wind"],
-          ["#healthcareforall", "#medicare4all", "pharma"],
+        keywords: [
+          { topic: 'Key Topics', terms: ['Ecomony', 'Healthcare', 'Foreign Policy', 'Environment'] },
+          { topic: 'Sentiment', terms: ['Optimistic', 'Concerned', 'Hopeful'] },
         ],
+        summary: 'The analysis indicates a leaning towards conservative viewpoints, with significant discussion around economic policies and healthcare reform. The overall sentiment is a mix of optimism about the future and concern over current events.',
+        meta: {
+          analyzedItemsCount: 128,
+          timeRange: 'Last 30 days',
+          modelUsed: 'Model-XYZ-v2.1',
+        },
       };
     } else {
       // Generic tool call (STUB)

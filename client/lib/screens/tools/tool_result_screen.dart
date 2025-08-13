@@ -11,8 +11,9 @@ import '../../widgets/icon_list.dart';
 /// ======================
 class ResultsScreen extends StatelessWidget {
   final AnalysisResult result;
+  final Tool tool;
 
-  const ResultsScreen({super.key, required this.result});
+  const ResultsScreen({super.key, required this.result, required this.tool});
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +25,7 @@ class ResultsScreen extends StatelessWidget {
         AnalysisStatus.success => _PremiumSuccess(
           result: result,
           iconListItems: _deriveTopicsFrom(context, result),
+          tool: tool,
         ),
       },
     );
@@ -78,10 +80,12 @@ class ResultsScreen extends StatelessWidget {
 class _PremiumSuccess extends StatelessWidget {
   final AnalysisResult result;
   final List<PremiumListItem> iconListItems; // ⬅️ new
+  final Tool tool;
 
   const _PremiumSuccess({
     required this.result,
     required this.iconListItems,
+    required this.tool,
   });
 
   @override
@@ -189,6 +193,9 @@ class _PremiumSuccess extends StatelessWidget {
                     _GlassCard(
                       child: _SummarySection(summary: result.summary!),
                     ),
+                    const SizedBox(height: 12),
+
+                    _SuggestedNextSteps(tool: tool),
                     const SizedBox(height: 16),
 
                     _PrimaryActions(
@@ -882,4 +889,62 @@ class _CenteredState extends StatelessWidget {
 /// ----------------------
 void _toast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+}
+
+import '../../l10n/app_localizations.dart';
+import '../../models/tool.dart';
+import '../../providers/tool_provider.dart';
+import 'package:provider/provider.dart';
+import 'tool_entry_screen.dart';
+
+class _SuggestedNextSteps extends StatelessWidget {
+  final Tool tool;
+  const _SuggestedNextSteps({required this.tool});
+
+  @override
+  Widget build(BuildContext context) {
+    final toolProvider = context.read<ToolProvider>();
+    final suggestedToolIds = tool.suggestedTools;
+
+    if (suggestedToolIds.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return StreamBuilder<List<Tool>>(
+      stream: toolProvider.getToolsByIds(suggestedToolIds),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        final suggestedTools = snapshot.data!;
+
+        final items = suggestedTools.map((tool) {
+          return PremiumListItem(
+            icon: Icons.auto_awesome, // Placeholder icon
+            title: tool.title,
+            subtitle: tool.subtitle,
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ToolEntryScreen(tool: tool),
+                ),
+              );
+            },
+          );
+        }).toList();
+
+        return _GlassCard(
+          child: PremiumIconList(
+            header: AppLocalizations.of(context)!.suggestedNextSteps,
+            items: items,
+            trailingBuilder: (ctx, it) => Icon(
+              Icons.chevron_right,
+              color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.35),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }

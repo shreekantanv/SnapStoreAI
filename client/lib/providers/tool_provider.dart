@@ -14,4 +14,17 @@ class ToolProvider {
       return snap.docs.map((d) => Tool.fromJson(d.data(), d.id)).toList();
     });
   }
+
+  Stream<List<Tool>> getToolsByIds(List<String> ids) {
+    if (ids.isEmpty) {
+      return Stream.value([]);
+    }
+    return _firestore
+        .collection('tools')
+        .where(FieldPath.documentId, whereIn: ids)
+        .snapshots()
+        .map((snap) {
+      return snap.docs.map((d) => Tool.fromJson(d.data(), d.id)).toList();
+    });
+  }
 }

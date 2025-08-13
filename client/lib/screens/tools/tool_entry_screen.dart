@@ -8,7 +8,10 @@ import 'package:client/widgets/dynamic_input_widget.dart';
 import 'package:client/widgets/feature_pill_widget.dart';
 import 'package:client/widgets/how_it_works_carousel.dart';
 
+import 'package:provider/provider.dart';
+
 import '../../models/analysis_result.dart';
+import '../../services/api_service.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -21,6 +24,7 @@ class ToolEntryScreen extends StatefulWidget {
 
 class _ToolEntryScreenState extends State<ToolEntryScreen> {
   final _inputValues = <String, String>{};
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -125,12 +129,18 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                   SizedBox(
                     height: 56,
                     child: FilledButton.icon(
-                      icon: const Icon(Icons.auto_awesome_rounded),
-                      label: Text(
-                        credits == null
-                            ? 'Generate'
-                            : 'Generate • $credits Credits',
-                      ),
+                      icon: _isLoading ? null : const Icon(Icons.auto_awesome_rounded),
+                      label: _isLoading
+                          ? const SizedBox(
+                              height: 24,
+                              width: 24,
+                              child: CircularProgressIndicator(strokeWidth: 3),
+                            )
+                          : Text(
+                              credits == null
+                                  ? 'Generate'
+                                  : 'Generate • $credits Credits',
+                            ),
                       style: FilledButton.styleFrom(
                         backgroundColor: cs.primary,
                         foregroundColor: cs.onPrimary,
@@ -141,40 +151,43 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                         ),
                         elevation: 2,
                       ),
-                      onPressed: () {
-                        // Mock data for success state
-                        final successResult = AnalysisResult(
-                          status: AnalysisStatus.success,
-                          subjectImage: 'https://images.unsplash.com/photo-1517849845537-4d257902454a?q=80&w=2535&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                          spectrum: Spectrum(
-                            minLabel: 'Liberal',
-                            maxLabel: 'Conservative',
-                            value: 75,
-                            confidence: 92.5,
-                          ),
-                          alignments: [
-                            ResultAlignment(label: 'Progressive', percent: 42),
-                            ResultAlignment(label: 'Centrist', percent: 35),
-                            ResultAlignment(label: 'Conservative', percent: 23),
-                          ],
-                          keywords: [
-                            KeywordGroup(topic: 'Key Topics', terms: ['Ecomony', 'Healthcare', 'Foreign Policy', 'Environment']),
-                            KeywordGroup(topic: 'Sentiment', terms: ['Optimistic', 'Concerned', 'Hopeful']),
-                          ],
-                          summary: 'The analysis indicates a leaning towards conservative viewpoints, with significant discussion around economic policies and healthcare reform. The overall sentiment is a mix of optimism about the future and concern over current events.',
-                          meta: Meta(
-                            analyzedItemsCount: 128,
-                            timeRange: 'Last 30 days',
-                            modelUsed: 'Model-XYZ-v2.1',
-                          ),
-                        );
+                      onPressed: _isLoading ? null : () async {
+                        setState(() {
+                          _isLoading = true;
+                        });
 
-                        // Navigate to results screen
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => ResultsScreen(result: successResult),
-                          ),
-                        );
+                        try {
+                          final apiService = context.read<ApiService>();
+                          final prompt = _inputValues.values.join(' ');
+                          final resultData = await apiService.runTool(widget.tool.id, 'grok-1', prompt);
+                          final analysisResult = AnalysisResult.fromJson(resultData['result']);
+
+                          if (mounted) {
+                             Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => ResultsScreen(
+                                  result: analysisResult,
+                                  tool: widget.tool,
+                                ),
+                              ),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('An error occurred: ${e.toString()}'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              _isLoading = false;
+                            });
+                          }
+                        }
                       },
                     ),
                   ),

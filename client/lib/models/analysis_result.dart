@@ -20,6 +20,25 @@ class AnalysisResult {
     this.meta,
     this.errorMessage,
   });
+
+  factory AnalysisResult.fromJson(Map<String, dynamic> json) {
+    return AnalysisResult(
+      subjectImage: json['subjectImage'] as String?,
+      spectrum: json['spectrum'] != null
+          ? Spectrum.fromJson(json['spectrum'] as Map<String, dynamic>)
+          : null,
+      alignments: (json['alignments'] as List<dynamic>?)
+          ?.map((e) => ResultAlignment.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      keywords: (json['keywords'] as List<dynamic>?)
+          ?.map((e) => KeywordGroup.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      summary: json['summary'] as String?,
+      meta: json['meta'] != null
+          ? Meta.fromJson(json['meta'] as Map<String, dynamic>)
+          : null,
+    );
+  }
 }
 
 class Spectrum {
@@ -34,6 +53,15 @@ class Spectrum {
     required this.value,
     required this.confidence,
   });
+
+  factory Spectrum.fromJson(Map<String, dynamic> json) {
+    return Spectrum(
+      minLabel: json['minLabel'] as String,
+      maxLabel: json['maxLabel'] as String,
+      value: json['value'] as int,
+      confidence: (json['confidence'] as num).toDouble(),
+    );
+  }
 }
 
 class ResultAlignment {
@@ -44,6 +72,13 @@ class ResultAlignment {
     required this.label,
     required this.percent,
   });
+
+  factory ResultAlignment.fromJson(Map<String, dynamic> json) {
+    return ResultAlignment(
+      label: json['label'] as String,
+      percent: json['percent'] as int,
+    );
+  }
 }
 
 class KeywordGroup {
@@ -54,6 +89,13 @@ class KeywordGroup {
     required this.topic,
     required this.terms,
   });
+
+  factory KeywordGroup.fromJson(Map<String, dynamic> json) {
+    return KeywordGroup(
+      topic: json['topic'] as String,
+      terms: (json['terms'] as List<dynamic>).map((e) => e as String).toList(),
+    );
+  }
 }
 
 class Meta {
@@ -66,4 +108,12 @@ class Meta {
     required this.timeRange,
     required this.modelUsed,
   });
+
+  factory Meta.fromJson(Map<String, dynamic> json) {
+    return Meta(
+      analyzedItemsCount: json['analyzedItemsCount'] as int,
+      timeRange: json['timeRange'] as String,
+      modelUsed: json['modelUsed'] as String,
+    );
+  }
 }
