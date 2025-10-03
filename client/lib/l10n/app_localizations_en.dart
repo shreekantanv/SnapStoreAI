@@ -117,4 +117,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get conservative => 'Conservative';
+
+  @override
+  String get suggestedNextSteps => 'Suggested Next Steps';
 }

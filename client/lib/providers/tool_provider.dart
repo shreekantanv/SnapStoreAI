@@ -1,6 +1,5 @@
 // lib/providers/tool_provider.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
 import '../models/tool.dart';
 
 class ToolProvider {

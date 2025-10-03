@@ -30,7 +30,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final int? credits = (widget.tool as dynamic?)?.creditCost; // optional
+    final int? credits = (widget.tool as dynamic)?.creditCost; // optional
 
     return Scaffold(
       appBar: AppBar(
@@ -71,7 +71,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                               label: pill.label,
                               icon: IconMapper.getIcon(pill.icon),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
@@ -259,7 +259,7 @@ class _GlassHeader extends StatelessWidget {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: cs.surfaceVariant.withOpacity(0.45),
+                      color: cs.surfaceContainerHighest.withOpacity(0.45),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: cs.outline.withOpacity(0.12)),
                     ),
@@ -307,7 +307,7 @@ class _CreditsChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: cs.surfaceVariant.withOpacity(0.40),
+        color: cs.surfaceContainerHighest.withOpacity(0.40),
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: cs.outline.withOpacity(0.14)),
       ),
@@ -341,7 +341,7 @@ class _SectionCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: cs.surfaceVariant.withOpacity(0.18),
+      color: cs.surfaceContainerHighest.withOpacity(0.18),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),

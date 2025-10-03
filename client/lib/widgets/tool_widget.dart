@@ -4,7 +4,7 @@ import '../models/tool.dart';
 class ToolCard extends StatelessWidget {
   final Tool tool;
   final VoidCallback? onTap;
-  const ToolCard({required this.tool, this.onTap, Key? key}) : super(key: key);
+  const ToolCard({required this.tool, this.onTap, super.key});
 
   @override
   Widget build(BuildContext context) {

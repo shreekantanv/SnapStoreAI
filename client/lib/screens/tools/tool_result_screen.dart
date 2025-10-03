@@ -4,6 +4,11 @@ import 'package:intl/intl.dart';
 
 import '../../models/analysis_result.dart';
 import '../../widgets/icon_list.dart';
+import '../../l10n/app_localizations.dart';
+import '../../models/tool.dart';
+import '../../providers/tool_provider.dart';
+import 'package:provider/provider.dart';
+import 'tool_entry_screen.dart';
 
 
 /// ======================
@@ -240,7 +245,7 @@ class _HeroMedia extends StatelessWidget {
               imageUrl,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                color: cs.surfaceVariant.withOpacity(0.3),
+                color: cs.surfaceContainerHighest.withOpacity(0.3),
                 child: const Center(
                   child: Icon(Icons.image_not_supported, size: 48),
                 ),
@@ -890,12 +895,6 @@ class _CenteredState extends StatelessWidget {
 void _toast(BuildContext context, String msg) {
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
 }
-
-import '../../l10n/app_localizations.dart';
-import '../../models/tool.dart';
-import '../../providers/tool_provider.dart';
-import 'package:provider/provider.dart';
-import 'tool_entry_screen.dart';
 
 class _SuggestedNextSteps extends StatelessWidget {
   final Tool tool;
