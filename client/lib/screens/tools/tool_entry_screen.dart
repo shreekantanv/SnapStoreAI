@@ -11,7 +11,7 @@ import 'package:client/widgets/how_it_works_carousel.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/analysis_result.dart';
-import '../../services/api_service.dart';
+import '../../services/grok_service.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -30,7 +30,6 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final int? credits = (widget.tool as dynamic)?.creditCost; // optional
 
     return Scaffold(
       appBar: AppBar(
@@ -54,18 +53,13 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                   const SizedBox(height: 16),
 
                   // --- Feature Pills (now includes Credits pill) ---
-                  if (widget.tool.featurePills.isNotEmpty || credits != null) ...[
+                  if (widget.tool.featurePills.isNotEmpty) ...[
                     _SectionCard(
                       title: 'Highlights',
                       child: Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          if (credits != null)
-                            FeaturePillWidget(
-                              label: '$credits Credits',
-                              icon: Icons.stars_rounded,
-                            ),
                           ...widget.tool.featurePills.map((pill) {
                             return FeaturePillWidget(
                               label: pill.label,
@@ -136,11 +130,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                               width: 24,
                               child: CircularProgressIndicator(strokeWidth: 3),
                             )
-                          : Text(
-                              credits == null
-                                  ? 'Generate'
-                                  : 'Generate • $credits Credits',
-                            ),
+                          : const Text('Generate'),
                       style: FilledButton.styleFrom(
                         backgroundColor: cs.primary,
                         foregroundColor: cs.onPrimary,
@@ -157,9 +147,9 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                         });
 
                         try {
-                          final apiService = context.read<ApiService>();
+                          final grokService = context.read<GrokService>();
                           final prompt = _inputValues.values.join(' ');
-                          final resultData = await apiService.runTool(widget.tool.id, 'grok-1', prompt);
+                          final resultData = await grokService.runTool(widget.tool.id, 'grok-1', prompt);
                           final analysisResult = AnalysisResult.fromJson(resultData['result']);
 
                           if (mounted) {
@@ -289,38 +279,6 @@ class _GlassHeader extends StatelessWidget {
                   ),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _CreditsChip extends StatelessWidget {
-  final int credits;
-  const _CreditsChip({required this.credits});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withOpacity(0.40),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outline.withOpacity(0.14)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.stars_rounded, size: 16, color: cs.onSurface.withOpacity(0.9)),
-          const SizedBox(width: 6),
-          Text(
-            '$credits Credits',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface.withOpacity(0.9),
             ),
           ),
         ],
