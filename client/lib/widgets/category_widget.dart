@@ -9,8 +9,8 @@ class CategorySection extends StatelessWidget {
   const CategorySection({
     required this.categoryName,
     required this.tools,
-    Key? key,
-  }) : super(key: key);
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) {

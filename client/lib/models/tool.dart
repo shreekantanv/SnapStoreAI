@@ -37,6 +37,7 @@ class Tool {
   final List<InputField> inputFields;
   final List<HowItWorksStep> howItWorks;
   final List<FeaturePill> featurePills;
+  final List<String> suggestedTools;
 
   Tool({
     required this.id,
@@ -51,6 +52,7 @@ class Tool {
     required this.inputFields,
     this.howItWorks = const [],
     this.featurePills = const [],
+    this.suggestedTools = const [],
   });
 
   factory Tool.fromJson(Map<String, dynamic> json, String id) {
@@ -74,6 +76,10 @@ class Tool {
           [],
       featurePills: (json['featurePills'] as List<dynamic>?)
               ?.map((e) => FeaturePill.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+      suggestedTools: (json['suggestedTools'] as List<dynamic>?)
+              ?.map((e) => e as String)
               .toList() ??
           [],
     );

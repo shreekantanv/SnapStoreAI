@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:client/screens/tools/tool_result_screen.dart';
 import 'package:flutter/material.dart';
 
 import 'package:client/models/tool.dart';
@@ -6,6 +7,10 @@ import 'package:client/utils/icon_mapper.dart';
 import 'package:client/widgets/dynamic_input_widget.dart';
 import 'package:client/widgets/feature_pill_widget.dart';
 import 'package:client/widgets/how_it_works_carousel.dart';
+
+import 'package:provider/provider.dart';
+
+import '../../models/analysis_result.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -18,12 +23,12 @@ class ToolEntryScreen extends StatefulWidget {
 
 class _ToolEntryScreenState extends State<ToolEntryScreen> {
   final _inputValues = <String, String>{};
+  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
-    final int? credits = (widget.tool as dynamic?)?.creditCost; // optional
 
     return Scaffold(
       appBar: AppBar(
@@ -47,24 +52,19 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                   const SizedBox(height: 16),
 
                   // --- Feature Pills (now includes Credits pill) ---
-                  if (widget.tool.featurePills.isNotEmpty || credits != null) ...[
+                  if (widget.tool.featurePills.isNotEmpty) ...[
                     _SectionCard(
                       title: 'Highlights',
                       child: Wrap(
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          if (credits != null)
-                            FeaturePillWidget(
-                              label: '$credits Credits',
-                              icon: Icons.stars_rounded,
-                            ),
                           ...widget.tool.featurePills.map((pill) {
                             return FeaturePillWidget(
                               label: pill.label,
                               icon: IconMapper.getIcon(pill.icon),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),
@@ -118,38 +118,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
 
                   const SizedBox(height: 18),
 
-                  // --- Generate button (shows credits if available) ---
-                  SizedBox(
-                    height: 56,
-                    child: FilledButton.icon(
-                      icon: const Icon(Icons.auto_awesome_rounded),
-                      label: Text(
-                        credits == null
-                            ? 'Generate'
-                            : 'Generate • $credits Credits',
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: cs.primary,
-                        foregroundColor: cs.onPrimary,
-                        textStyle:
-                        tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 2,
-                      ),
-                      onPressed: () {
-                        final sm = ScaffoldMessenger.of(context);
-                        sm.showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Generate button pressed with inputs: $_inputValues',
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+
 
                   const SizedBox(height: 12),
 
@@ -218,7 +187,7 @@ class _GlassHeader extends StatelessWidget {
                     width: 72,
                     height: 72,
                     decoration: BoxDecoration(
-                      color: cs.surfaceVariant.withOpacity(0.45),
+                      color: cs.surfaceContainerHighest.withOpacity(0.45),
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(color: cs.outline.withOpacity(0.12)),
                     ),
@@ -256,38 +225,6 @@ class _GlassHeader extends StatelessWidget {
   }
 }
 
-class _CreditsChip extends StatelessWidget {
-  final int credits;
-  const _CreditsChip({required this.credits});
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: cs.surfaceVariant.withOpacity(0.40),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: cs.outline.withOpacity(0.14)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.stars_rounded, size: 16, color: cs.onSurface.withOpacity(0.9)),
-          const SizedBox(width: 6),
-          Text(
-            '$credits Credits',
-            style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: cs.onSurface.withOpacity(0.9),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _SectionCard extends StatelessWidget {
   final String? title;
   final Widget child;
@@ -300,7 +237,7 @@ class _SectionCard extends StatelessWidget {
 
     return Card(
       elevation: 0,
-      color: cs.surfaceVariant.withOpacity(0.18),
+      color: cs.surfaceContainerHighest.withOpacity(0.18),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
