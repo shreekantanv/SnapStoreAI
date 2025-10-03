@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
 
 import 'firebase_options.dart'; // generated via flutterfire CLI
@@ -10,7 +9,6 @@ import 'providers/firestore_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/tool_provider.dart';
 import 'providers/theme_provider.dart';
-import 'services/grok_service.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -19,7 +17,6 @@ import 'screens/home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -37,7 +34,6 @@ class MyApp extends StatelessWidget {
         Provider(create: (_) => ToolProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider(create: (_) => FirestoreProvider()),
-        Provider(create: (_) => GrokService()),
         ChangeNotifierProxyProvider2<AuthProvider, FirestoreProvider, HistoryProvider>(
           create: (_) => HistoryProvider(
             context.read<AuthProvider>(),

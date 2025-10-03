@@ -11,7 +11,6 @@ import 'package:client/widgets/how_it_works_carousel.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/analysis_result.dart';
-import '../../services/grok_service.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -119,68 +118,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
 
                   const SizedBox(height: 18),
 
-                  // --- Generate button (shows credits if available) ---
-                  SizedBox(
-                    height: 56,
-                    child: FilledButton.icon(
-                      icon: _isLoading ? null : const Icon(Icons.auto_awesome_rounded),
-                      label: _isLoading
-                          ? const SizedBox(
-                              height: 24,
-                              width: 24,
-                              child: CircularProgressIndicator(strokeWidth: 3),
-                            )
-                          : const Text('Generate'),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: cs.primary,
-                        foregroundColor: cs.onPrimary,
-                        textStyle:
-                        tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        elevation: 2,
-                      ),
-                      onPressed: _isLoading ? null : () async {
-                        setState(() {
-                          _isLoading = true;
-                        });
 
-                        try {
-                          final grokService = context.read<GrokService>();
-                          final prompt = _inputValues.values.join(' ');
-                          final resultData = await grokService.runTool(widget.tool.id, 'grok-1', prompt);
-                          final analysisResult = AnalysisResult.fromJson(resultData['result']);
-
-                          if (mounted) {
-                             Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => ResultsScreen(
-                                  result: analysisResult,
-                                  tool: widget.tool,
-                                ),
-                              ),
-                            );
-                          }
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('An error occurred: ${e.toString()}'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        } finally {
-                          if (mounted) {
-                            setState(() {
-                              _isLoading = false;
-                            });
-                          }
-                        }
-                      },
-                    ),
-                  ),
 
                   const SizedBox(height: 12),
 
