@@ -37,12 +37,9 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider(create: (_) => FirestoreProvider()),
         ChangeNotifierProxyProvider2<AuthProvider, FirestoreProvider, HistoryProvider>(
-          create: (_) => HistoryProvider(
-            context.read<AuthProvider>(),
-            context.read<FirestoreProvider>(),
-          ),
+          create: (_) => HistoryProvider(),
           update: (_, auth, firestore, previous) {
-            final provider = previous ?? HistoryProvider(auth, firestore);
+            final provider = previous ?? HistoryProvider();
             provider.update(auth, firestore);
             return provider;
           },

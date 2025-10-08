@@ -8,17 +8,12 @@ import 'auth_provider.dart';
 import 'firestore_provider.dart';
 
 class HistoryProvider extends ChangeNotifier {
-  HistoryProvider(AuthProvider authProvider, FirestoreProvider firestoreProvider) {
-    _authProvider = authProvider;
-    _firestoreProvider = firestoreProvider;
-    _authListener = _handleAuthChanged;
-    _authProvider.addListener(_authListener!);
-    _handleAuthChanged();
-  }
+  HistoryProvider();
 
-  late AuthProvider _authProvider;
-  late FirestoreProvider _firestoreProvider;
+  AuthProvider? _authProvider;
+  FirestoreProvider? _firestoreProvider;
   VoidCallback? _authListener;
+  bool _listeningToAuth = false;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -33,17 +28,36 @@ class HistoryProvider extends ChangeNotifier {
   String? _currentUid;
 
   void update(AuthProvider authProvider, FirestoreProvider firestoreProvider) {
-    if (!identical(_authProvider, authProvider)) {
-      _authProvider.removeListener(_authListener!);
-      _authProvider = authProvider;
-      _authProvider.addListener(_authListener!);
+    final authChanged = !identical(_authProvider, authProvider);
+
+    if (_listeningToAuth && authChanged && _authProvider != null && _authListener != null) {
+      _authProvider!.removeListener(_authListener!);
+      _listeningToAuth = false;
     }
+
+    _authProvider = authProvider;
     _firestoreProvider = firestoreProvider;
+
+    _authListener ??= _handleAuthChanged;
+
+    if (!_listeningToAuth && _authListener != null) {
+      _authProvider!.addListener(_authListener!);
+      _listeningToAuth = true;
+    }
+
     _handleAuthChanged();
   }
 
   Future<void> fetchHistory() async {
-    final uid = _authProvider.user?.uid;
+    final authProvider = _authProvider;
+    final firestoreProvider = _firestoreProvider;
+
+    if (authProvider == null || firestoreProvider == null) {
+      _resetState();
+      return;
+    }
+
+    final uid = authProvider.user?.uid;
     if (uid == null) {
       _resetState();
       return;
@@ -57,7 +71,7 @@ class HistoryProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final stream = _firestoreProvider.getActivity(uid);
+      final stream = firestoreProvider.getActivity(uid);
       _historySubscription = stream.listen(
         (snapshot) {
           final items = snapshot.docs
@@ -85,7 +99,12 @@ class HistoryProvider extends ChangeNotifier {
   }
 
   void _handleAuthChanged() {
-    final uid = _authProvider.user?.uid;
+    final authProvider = _authProvider;
+    if (authProvider == null) {
+      return;
+    }
+
+    final uid = authProvider.user?.uid;
     if (uid == null) {
       _currentUid = null;
       _resetState();
@@ -115,10 +134,13 @@ class HistoryProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    if (_authListener != null) {
-      _authProvider.removeListener(_authListener!);
-      _authListener = null;
+    if (_authListener != null && _authProvider != null && _listeningToAuth) {
+      _authProvider!.removeListener(_authListener!);
     }
+    _authListener = null;
+    _listeningToAuth = false;
+    _authProvider = null;
+    _firestoreProvider = null;
     _clearSubscription();
     super.dispose();
   }
