@@ -83,7 +83,7 @@ class AppTheme {
       shadow: Colors.black,
       scrim: Colors.black,
       inverseSurface: Color(0xFF352F3E),
-      inverseOnSurface: Color(0xFFF1EAF9),
+      onInverseSurface: Color(0xFFF1EAF9),
       background: Color(0xFFF8F5FF),
       onBackground: Color(0xFF1B1724),
     );
@@ -150,7 +150,7 @@ class AppTheme {
       shadow: Colors.black,
       scrim: Colors.black,
       inverseSurface: Color(0xFFE7DEF1),
-      inverseOnSurface: Color(0xFF1A1524),
+      onInverseSurface: Color(0xFF1A1524),
       background: Color(0xFF0E0D14),
       onBackground: Color(0xFFE7DEF1),
     );
@@ -215,7 +215,7 @@ class AppTheme {
           letterSpacing: -0.2,
         ),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 0,
         clipBehavior: Clip.antiAlias,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -270,7 +270,7 @@ class AppTheme {
         behavior: SnackBarBehavior.floating,
         backgroundColor: colorScheme.inverseSurface,
         contentTextStyle: textTheme.bodyMedium?.copyWith(
-          color: colorScheme.inverseOnSurface,
+          color: colorScheme.onInverseSurface,
         ),
         actionTextColor: colorScheme.tertiary,
       ),
