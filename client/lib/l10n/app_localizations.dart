@@ -148,12 +148,6 @@ abstract class AppLocalizations {
   /// **'History'**
   String get history;
 
-  /// No description provided for @wallet.
-  ///
-  /// In en, this message translates to:
-  /// **'Wallet'**
-  String get wallet;
-
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:

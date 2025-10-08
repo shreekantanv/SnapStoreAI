@@ -61,7 +61,7 @@ class ResultsScreen extends StatelessWidget {
       if (t.contains('immigration')) return Icons.groups_2_outlined;
       if (t.contains('education') || t.contains('school')) return Icons.school_outlined;
       if (t.contains('gun')) return Icons.security_outlined;
-      if (t.contains('social')) return Icons.account_balance_wallet_outlined;
+      if (t.contains('social')) return Icons.people_alt_outlined;
       if (t.contains('defense') || t.contains('security')) return Icons.shield_outlined;
       return Icons.topic;
     }

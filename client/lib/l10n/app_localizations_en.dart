@@ -36,9 +36,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get history => 'History';
 
   @override
-  String get wallet => 'Wallet';
-
-  @override
   String get settings => 'Settings';
 
   @override

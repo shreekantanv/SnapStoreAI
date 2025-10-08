@@ -68,19 +68,11 @@ class _HomeScreenState extends State<HomeScreen> {
         }).toList();
 
         return Scaffold(
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              // TODO: navigate to wallet
-            },
-            child: const Icon(Icons.account_balance_wallet),
-          ),
           bottomNavigationBar: BottomNavigationBar(
             currentIndex: _currentNavIndex,
             onTap: (i) {
-              if (i == 4) {
+              if (i == 3) {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
-              } else if (i == 2) {
-                
               } else {
                 setState(() => _currentNavIndex = i);
               }
@@ -90,7 +82,6 @@ class _HomeScreenState extends State<HomeScreen> {
               BottomNavigationBarItem(icon: const Icon(Icons.home), label: l10n.tools),
               BottomNavigationBarItem(icon: const Icon(Icons.favorite), label: l10n.favorites),
               BottomNavigationBarItem(icon: const Icon(Icons.history), label: l10n.history),
-              BottomNavigationBarItem(icon: const Icon(Icons.account_balance_wallet), label: l10n.wallet),
               BottomNavigationBarItem(icon: const Icon(Icons.settings), label: l10n.settings),
             ],
           ),
