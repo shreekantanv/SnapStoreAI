@@ -142,6 +142,42 @@ abstract class AppLocalizations {
   /// **'Favorites'**
   String get favorites;
 
+  /// No description provided for @homeHeroGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get homeHeroGeneric;
+
+  /// No description provided for @homeHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {name}'**
+  String homeHeroTitle(String name);
+
+  /// No description provided for @homeHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Curated AI tools to elevate your workflow.'**
+  String get homeHeroSubtitle;
+
+  /// No description provided for @premiumHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium highlights'**
+  String get premiumHighlights;
+
+  /// No description provided for @homeToolCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore {count} handpicked tools.'**
+  String homeToolCount(int count);
+
+  /// No description provided for @favoritesCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart on any tool to curate your favorites.'**
+  String get favoritesCta;
+
   /// No description provided for @tags.
   ///
   /// In en, this message translates to:
@@ -243,6 +279,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get retry;
+
+  /// No description provided for @settingsApiKeySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'API key saved securely.'**
+  String get settingsApiKeySaved;
+
+  /// No description provided for @settingsPremiumControlsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium Controls'**
+  String get settingsPremiumControlsTitle;
+
+  /// No description provided for @settingsGrokLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Grok API Key'**
+  String get settingsGrokLabel;
+
+  /// No description provided for @settingsGrokHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your Grok API key'**
+  String get settingsGrokHint;
+
+  /// No description provided for @settingsSaveApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Save API Key'**
+  String get settingsSaveApiKey;
 
   /// No description provided for @settings.
   ///

@@ -7,6 +7,26 @@
     "all": "All",
     "tools": "Tools",
   "favorites": "Favorites",
+  "homeHeroGeneric": "Welcome back",
+  "homeHeroTitle": "Welcome back, {name}",
+  "@homeHeroTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroSubtitle": "Curated AI tools to elevate your workflow.",
+  "premiumHighlights": "Premium highlights",
+  "homeToolCount": "Explore {count} handpicked tools.",
+  "@homeToolCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "favoritesCta": "Tap the heart on any tool to curate your favorites.",
   "tags": "Tags",
   "clearTagFilters": "Clear tag filters",
   "noToolsFoundTitle": "No tools found",
@@ -24,6 +44,11 @@
   "historyUnknownTool": "Unknown tool",
   "historyUnknownTime": "Unknown time",
   "retry": "Retry",
+  "settingsApiKeySaved": "API key saved securely.",
+  "settingsPremiumControlsTitle": "Premium Controls",
+  "settingsGrokLabel": "Grok API Key",
+  "settingsGrokHint": "Enter your Grok API key",
+  "settingsSaveApiKey": "Save API Key",
     "settings": "Settings",
     "aiToolbox": "AI Toolbox",
     "politicalLeaningAnalyzer": "Political Leaning Analyzer",

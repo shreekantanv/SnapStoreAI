@@ -33,6 +33,30 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favorites => 'Favorites';
 
   @override
+  String get homeHeroGeneric => 'Welcome back';
+
+  @override
+  String homeHeroTitle(String name) {
+    return 'Welcome back, $name';
+  }
+
+  @override
+  String get homeHeroSubtitle => 'Curated AI tools to elevate your workflow.';
+
+  @override
+  String get premiumHighlights => 'Premium highlights';
+
+  @override
+  String homeToolCount(int count) {
+    final formatted = intl.NumberFormat.compact().format(count);
+    final noun = count == 1 ? 'tool' : 'tools';
+    return 'Explore $formatted handpicked $noun.';
+  }
+
+  @override
+  String get favoritesCta => 'Tap the heart on any tool to curate your favorites.';
+
+  @override
   String get tags => 'Tags';
 
   @override
@@ -86,6 +110,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get retry => 'Retry';
+
+  @override
+  String get settingsApiKeySaved => 'API key saved securely.';
+
+  @override
+  String get settingsPremiumControlsTitle => 'Premium Controls';
+
+  @override
+  String get settingsGrokLabel => 'Grok API Key';
+
+  @override
+  String get settingsGrokHint => 'Enter your Grok API key';
+
+  @override
+  String get settingsSaveApiKey => 'Save API Key';
 
   @override
   String get settings => 'Settings';

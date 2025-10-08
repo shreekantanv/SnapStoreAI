@@ -9,6 +9,7 @@ import 'providers/history_provider.dart';
 import 'providers/tool_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/favorite_tools_provider.dart';
+import 'theme/app_theme.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -47,19 +48,8 @@ class MyApp extends StatelessWidget {
         builder: (context, themeProvider, child) {
           return MaterialApp(
             title: 'SnapStoreAI',
-            theme: ThemeData(
-              brightness: Brightness.light,
-              colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
-              useMaterial3: true,
-            ),
-            darkTheme: ThemeData(
-              brightness: Brightness.dark,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: Colors.blue,
-                brightness: Brightness.dark,
-              ),
-              useMaterial3: true,
-            ),
+            theme: AppTheme.light(),
+            darkTheme: AppTheme.dark(),
             themeMode: themeProvider.themeMode,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
