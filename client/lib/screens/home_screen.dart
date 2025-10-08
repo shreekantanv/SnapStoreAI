@@ -7,6 +7,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/tool_provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/theme_provider.dart';
+import '../providers/favorite_tools_provider.dart';
 import '../widgets/tool_widget.dart';
 import '../models/tool.dart';
 
@@ -22,6 +23,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _search = '';
   String _selectedCategory = 'All';
   int _currentNavIndex = 0;
+  final Set<String> _selectedTags = <String>{};
   final _searchCtrl = TextEditingController();
 
   @override
@@ -42,6 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final prov = context.watch<ToolProvider>();
     final themeProvider = context.watch<ThemeProvider>();
+    final favoritesProvider = context.watch<FavoriteToolsProvider>();
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
@@ -55,7 +58,16 @@ class _HomeScreenState extends State<HomeScreen> {
           return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
         }
         final allTools = snapshot.data ?? [];
-        final categories = <String>['All', ...allTools.map((t) => t.category).toSet()];
+        final categorySet = <String>{...allTools.map((t) => t.category)}
+          ..removeWhere((element) => element.trim().isEmpty);
+        final categories = ['All', ...categorySet.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
+        final tags = allTools
+            .expand((t) => t.tags)
+            .map((e) => e.trim())
+            .where((tag) => tag.isNotEmpty)
+            .toSet()
+            .toList()
+          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
         final filtered = allTools.where((t) {
           final q = _search.trim().toLowerCase();
@@ -64,8 +76,18 @@ class _HomeScreenState extends State<HomeScreen> {
               t.subtitle.toLowerCase().contains(q);
           final matchesCategory =
               _selectedCategory == 'All' || t.category == _selectedCategory;
-          return matchesSearch && matchesCategory;
+          final matchesTags =
+              _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
+          return matchesSearch && matchesCategory && matchesTags;
         }).toList();
+
+        final showFavoritesOnly = _currentNavIndex == 1;
+        final displayTools = filtered
+            .where(
+              (tool) =>
+                  !showFavoritesOnly || favoritesProvider.isFavorite(tool.id),
+            )
+            .toList();
 
         return Scaffold(
           bottomNavigationBar: BottomNavigationBar(
@@ -157,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 const Icon(Icons.check, size: 16),
                                 const SizedBox(width: 6),
                               ],
-                              Text(cat),
+                              Text(cat == 'All' ? l10n.all : cat),
                             ],
                           ),
                           showCheckmark: false,
@@ -175,15 +197,72 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                if (tags.isNotEmpty) ...[
+                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.tags,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                          ),
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              for (final tag in tags)
+                                FilterChip(
+                                  label: Text(tag),
+                                  selected: _selectedTags.contains(tag),
+                                  onSelected: (_) {
+                                    setState(() {
+                                      if (_selectedTags.contains(tag)) {
+                                        _selectedTags.remove(tag);
+                                      } else {
+                                        _selectedTags.add(tag);
+                                      }
+                                    });
+                                  },
+                                ),
+                              if (_selectedTags.isNotEmpty)
+                                InputChip(
+                                  label: Text(l10n.clearTagFilters),
+                                  onPressed: () => setState(() {
+                                    _selectedTags.clear();
+                                  }),
+                                  avatar: const Icon(Icons.close, size: 18),
+                                ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
                 const SliverToBoxAdapter(child: SizedBox(height: 8)),
 
                 // Grid or Empty state
-                if (filtered.isEmpty)
+                if (showFavoritesOnly && !favoritesProvider.isLoaded)
+                  const SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                else if (displayTools.isEmpty)
                   SliverFillRemaining(
                     hasScrollBody: false,
-                    child: const _EmptyState(
-                      title: 'No tools found',
-                      subtitle: 'Try a different keyword or category.',
+                    child: _EmptyState(
+                      title: showFavoritesOnly
+                          ? l10n.noFavoritesTitle
+                          : l10n.noToolsFoundTitle,
+                      subtitle: showFavoritesOnly
+                          ? l10n.noFavoritesSubtitle
+                          : l10n.noToolsFoundSubtitle,
                     ),
                   )
                 else
@@ -206,14 +285,19 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                           delegate: SliverChildBuilderDelegate(
                                 (context, idx) {
-                              final tool = filtered[idx];
+                              final tool = displayTools[idx];
                               return ClipRRect(
                                 borderRadius: radius, // ensures overlay/tile share same rounding
                                 child: Stack(
                                   fit: StackFit.expand,
                                   children: [
                                     // Your visual card
-                                    ToolCard(tool: tool),
+                                    ToolCard(
+                                      tool: tool,
+                                      isFavorite: favoritesProvider.isFavorite(tool.id),
+                                      onFavoriteToggle: () =>
+                                          favoritesProvider.toggleFavorite(tool.id),
+                                    ),
 
                                     // Full-tile tap layer
                                     Material(
@@ -226,7 +310,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ),
                               );
                             },
-                            childCount: filtered.length,
+                            childCount: displayTools.length,
                           ),
                         );
                       },

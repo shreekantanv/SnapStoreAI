@@ -142,6 +142,54 @@ abstract class AppLocalizations {
   /// **'Favorites'**
   String get favorites;
 
+  /// No description provided for @tags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tags;
+
+  /// No description provided for @clearTagFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tag filters'**
+  String get clearTagFilters;
+
+  /// No description provided for @noToolsFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No tools found'**
+  String get noToolsFoundTitle;
+
+  /// No description provided for @noToolsFoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different keyword, tag, or category.'**
+  String get noToolsFoundSubtitle;
+
+  /// No description provided for @noFavoritesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No favorites yet'**
+  String get noFavoritesTitle;
+
+  /// No description provided for @noFavoritesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart icon on a tool to save it for quick access.'**
+  String get noFavoritesSubtitle;
+
+  /// No description provided for @addToFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get addToFavorites;
+
+  /// No description provided for @removeFromFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get removeFromFavorites;
+
   /// No description provided for @history.
   ///
   /// In en, this message translates to:

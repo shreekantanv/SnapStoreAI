@@ -31,6 +31,7 @@ class Tool {
   final String? description;
   final String imageUrl;
   final String category;
+  final List<String> tags;
   final String? prompt;
   final int creditCost;
   final String? privacyNote;
@@ -46,6 +47,7 @@ class Tool {
     this.description,
     required this.imageUrl,
     required this.category,
+    this.tags = const [],
     this.prompt,
     required this.creditCost,
     this.privacyNote,
@@ -63,6 +65,11 @@ class Tool {
       description: json['description'] as String?,
       imageUrl: json['imageUrl'] as String,
       category: json['category'] as String,
+      tags: (json['tags'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .where((element) => element.trim().isNotEmpty)
+              .toList(growable: false) ??
+          const [],
       prompt: json['prompt'] as String?,
       creditCost: json['creditCost'] as int? ?? 1,
       privacyNote: json['privacyNote'] as String?,

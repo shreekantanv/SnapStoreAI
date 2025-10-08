@@ -9,6 +9,7 @@ import 'providers/firestore_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/tool_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/favorite_tools_provider.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
@@ -32,6 +33,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         Provider(create: (_) => ToolProvider()),
+        ChangeNotifierProvider(create: (_) => FavoriteToolsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         Provider(create: (_) => FirestoreProvider()),
         ChangeNotifierProxyProvider2<AuthProvider, FirestoreProvider, HistoryProvider>(

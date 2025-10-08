@@ -33,6 +33,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favorites => 'Favorites';
 
   @override
+  String get tags => 'Tags';
+
+  @override
+  String get clearTagFilters => 'Clear tag filters';
+
+  @override
+  String get noToolsFoundTitle => 'No tools found';
+
+  @override
+  String get noToolsFoundSubtitle =>
+      'Try a different keyword, tag, or category.';
+
+  @override
+  String get noFavoritesTitle => 'No favorites yet';
+
+  @override
+  String get noFavoritesSubtitle =>
+      'Tap the heart icon on a tool to save it for quick access.';
+
+  @override
+  String get addToFavorites => 'Add to favorites';
+
+  @override
+  String get removeFromFavorites => 'Remove from favorites';
+
+  @override
   String get history => 'History';
 
   @override

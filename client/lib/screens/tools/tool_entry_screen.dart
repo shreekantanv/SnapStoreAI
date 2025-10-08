@@ -11,6 +11,8 @@ import 'package:client/widgets/how_it_works_carousel.dart';
 import 'package:provider/provider.dart';
 
 import '../../models/analysis_result.dart';
+import '../../l10n/app_localizations.dart';
+import '../../providers/favorite_tools_provider.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -29,10 +31,23 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
+    final l10n = AppLocalizations.of(context)!;
+    final favorites = context.watch<FavoriteToolsProvider>();
+    final isFavorite = favorites.isFavorite(widget.tool.id);
 
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(isFavorite ? Icons.favorite : Icons.favorite_border),
+            tooltip: isFavorite
+                ? l10n.removeFromFavorites
+                : l10n.addToFavorites,
+            onPressed: () =>
+                favorites.toggleFavorite(widget.tool.id),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -50,6 +65,23 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                     subtitle: widget.tool.subtitle,
                   ),
                   const SizedBox(height: 16),
+
+                  if (widget.tool.tags.isNotEmpty) ...[
+                    _SectionCard(
+                      title: l10n.tags,
+                      child: Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final tag in widget.tool.tags)
+                            Chip(
+                              label: Text(tag),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   // --- Feature Pills (now includes Credits pill) ---
                   if (widget.tool.featurePills.isNotEmpty) ...[
