@@ -33,10 +33,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favorites => 'Favorites';
 
   @override
+  String get homeHeroGeneric => 'Welcome back';
+
+  @override
+  String homeHeroTitle(String name) {
+    return 'Welcome back, $name';
+  }
+
+  @override
+  String get homeHeroSubtitle => 'Curated AI tools to elevate your workflow.';
+
+  @override
+  String get premiumHighlights => 'Premium highlights';
+
+  @override
+  String homeToolCount(int count) {
+    return 'Explore $count handpicked tools.';
+  }
+
+  @override
+  String get favoritesCta =>
+      'Tap the heart on any tool to curate your favorites.';
+
+  @override
+  String get tags => 'Tags';
+
+  @override
+  String get clearTagFilters => 'Clear tag filters';
+
+  @override
+  String get noToolsFoundTitle => 'No tools found';
+
+  @override
+  String get noToolsFoundSubtitle =>
+      'Try a different keyword, tag, or category.';
+
+  @override
+  String get noFavoritesTitle => 'No favorites yet';
+
+  @override
+  String get noFavoritesSubtitle =>
+      'Tap the heart icon on a tool to save it for quick access.';
+
+  @override
+  String get addToFavorites => 'Add to favorites';
+
+  @override
+  String get removeFromFavorites => 'Remove from favorites';
+
+  @override
   String get history => 'History';
 
   @override
-  String get wallet => 'Wallet';
+  String get historyEmptyTitle => 'No history yet';
+
+  @override
+  String get historyEmptySubtitle =>
+      'Run a tool to see your recent activity here.';
+
+  @override
+  String get historyErrorMessage =>
+      'We couldn\'t load your activity right now.';
+
+  @override
+  String get historyInputsLabel => 'Inputs';
+
+  @override
+  String get historyOutputsLabel => 'Results';
+
+  @override
+  String get historyUnknownTool => 'Unknown tool';
+
+  @override
+  String get historyUnknownTime => 'Unknown time';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
+  String get settingsApiKeySaved => 'API key saved securely.';
+
+  @override
+  String get settingsPremiumControlsTitle => 'Premium Controls';
+
+  @override
+  String get settingsGrokLabel => 'Grok API Key';
+
+  @override
+  String get settingsGrokHint => 'Enter your Grok API key';
+
+  @override
+  String get settingsSaveApiKey => 'Save API Key';
 
   @override
   String get settings => 'Settings';

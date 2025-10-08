@@ -6,9 +6,49 @@
     "searchForTools": "Search for tools",
     "all": "All",
     "tools": "Tools",
-    "favorites": "Favorites",
-    "history": "History",
-    "wallet": "Wallet",
+  "favorites": "Favorites",
+  "homeHeroGeneric": "Welcome back",
+  "homeHeroTitle": "Welcome back, {name}",
+  "@homeHeroTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeHeroSubtitle": "Curated AI tools to elevate your workflow.",
+  "premiumHighlights": "Premium highlights",
+  "homeToolCount": "Explore {count} handpicked tools.",
+  "@homeToolCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "favoritesCta": "Tap the heart on any tool to curate your favorites.",
+  "tags": "Tags",
+  "clearTagFilters": "Clear tag filters",
+  "noToolsFoundTitle": "No tools found",
+  "noToolsFoundSubtitle": "Try a different keyword, tag, or category.",
+  "noFavoritesTitle": "No favorites yet",
+  "noFavoritesSubtitle": "Tap the heart icon on a tool to save it for quick access.",
+  "addToFavorites": "Add to favorites",
+  "removeFromFavorites": "Remove from favorites",
+  "history": "History",
+  "historyEmptyTitle": "No history yet",
+  "historyEmptySubtitle": "Run a tool to see your recent activity here.",
+  "historyErrorMessage": "We couldn't load your activity right now.",
+  "historyInputsLabel": "Inputs",
+  "historyOutputsLabel": "Results",
+  "historyUnknownTool": "Unknown tool",
+  "historyUnknownTime": "Unknown time",
+  "retry": "Retry",
+  "settingsApiKeySaved": "API key saved securely.",
+  "settingsPremiumControlsTitle": "Premium Controls",
+  "settingsGrokLabel": "Grok API Key",
+  "settingsGrokHint": "Enter your Grok API key",
+  "settingsSaveApiKey": "Save API Key",
     "settings": "Settings",
     "aiToolbox": "AI Toolbox",
     "politicalLeaningAnalyzer": "Political Leaning Analyzer",

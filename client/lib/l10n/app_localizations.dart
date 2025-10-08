@@ -142,17 +142,173 @@ abstract class AppLocalizations {
   /// **'Favorites'**
   String get favorites;
 
+  /// No description provided for @homeHeroGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back'**
+  String get homeHeroGeneric;
+
+  /// No description provided for @homeHeroTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Welcome back, {name}'**
+  String homeHeroTitle(String name);
+
+  /// No description provided for @homeHeroSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Curated AI tools to elevate your workflow.'**
+  String get homeHeroSubtitle;
+
+  /// No description provided for @premiumHighlights.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium highlights'**
+  String get premiumHighlights;
+
+  /// No description provided for @homeToolCount.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore {count} handpicked tools.'**
+  String homeToolCount(int count);
+
+  /// No description provided for @favoritesCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart on any tool to curate your favorites.'**
+  String get favoritesCta;
+
+  /// No description provided for @tags.
+  ///
+  /// In en, this message translates to:
+  /// **'Tags'**
+  String get tags;
+
+  /// No description provided for @clearTagFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear tag filters'**
+  String get clearTagFilters;
+
+  /// No description provided for @noToolsFoundTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No tools found'**
+  String get noToolsFoundTitle;
+
+  /// No description provided for @noToolsFoundSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try a different keyword, tag, or category.'**
+  String get noToolsFoundSubtitle;
+
+  /// No description provided for @noFavoritesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No favorites yet'**
+  String get noFavoritesTitle;
+
+  /// No description provided for @noFavoritesSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Tap the heart icon on a tool to save it for quick access.'**
+  String get noFavoritesSubtitle;
+
+  /// No description provided for @addToFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to favorites'**
+  String get addToFavorites;
+
+  /// No description provided for @removeFromFavorites.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove from favorites'**
+  String get removeFromFavorites;
+
   /// No description provided for @history.
   ///
   /// In en, this message translates to:
   /// **'History'**
   String get history;
 
-  /// No description provided for @wallet.
+  /// No description provided for @historyEmptyTitle.
   ///
   /// In en, this message translates to:
-  /// **'Wallet'**
-  String get wallet;
+  /// **'No history yet'**
+  String get historyEmptyTitle;
+
+  /// No description provided for @historyEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a tool to see your recent activity here.'**
+  String get historyEmptySubtitle;
+
+  /// No description provided for @historyErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t load your activity right now.'**
+  String get historyErrorMessage;
+
+  /// No description provided for @historyInputsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inputs'**
+  String get historyInputsLabel;
+
+  /// No description provided for @historyOutputsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Results'**
+  String get historyOutputsLabel;
+
+  /// No description provided for @historyUnknownTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown tool'**
+  String get historyUnknownTool;
+
+  /// No description provided for @historyUnknownTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown time'**
+  String get historyUnknownTime;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
+  /// No description provided for @settingsApiKeySaved.
+  ///
+  /// In en, this message translates to:
+  /// **'API key saved securely.'**
+  String get settingsApiKeySaved;
+
+  /// No description provided for @settingsPremiumControlsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Premium Controls'**
+  String get settingsPremiumControlsTitle;
+
+  /// No description provided for @settingsGrokLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Grok API Key'**
+  String get settingsGrokLabel;
+
+  /// No description provided for @settingsGrokHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your Grok API key'**
+  String get settingsGrokHint;
+
+  /// No description provided for @settingsSaveApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Save API Key'**
+  String get settingsSaveApiKey;
 
   /// No description provided for @settings.
   ///
