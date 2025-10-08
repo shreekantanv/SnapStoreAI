@@ -1,7 +1,5 @@
 import 'dart:collection';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class ToolActivity {
   ToolActivity({
     required this.id,
@@ -18,20 +16,29 @@ class ToolActivity {
   final Map<String, dynamic> outputs;
   final DateTime? timestamp;
 
-  static ToolActivity? fromSnapshot(
-      QueryDocumentSnapshot<Map<String, dynamic>> doc) {
-    final data = doc.data();
-    final toolId = (data['toolId'] as String?)?.trim();
-    if (toolId == null || toolId.isEmpty) {
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'id': id,
+      'toolId': toolId,
+      'inputs': Map<String, dynamic>.from(inputs),
+      'outputs': Map<String, dynamic>.from(outputs),
+      'timestamp': timestamp?.toIso8601String(),
+    };
+  }
+
+  static ToolActivity? fromJson(Map<String, dynamic> json) {
+    final id = (json['id'] as String?)?.trim();
+    final toolId = (json['toolId'] as String?)?.trim();
+    if (id == null || id.isEmpty || toolId == null || toolId.isEmpty) {
       return null;
     }
 
     return ToolActivity(
-      id: doc.id,
+      id: id,
       toolId: toolId,
-      inputs: _coerceMap(data['inputs']),
-      outputs: _coerceMap(data['outputs']),
-      timestamp: _parseTimestamp(data['ts']),
+      inputs: _coerceMap(json['inputs']),
+      outputs: _coerceMap(json['outputs']),
+      timestamp: _parseTimestamp(json['timestamp']),
     );
   }
 
@@ -46,11 +53,22 @@ class ToolActivity {
   }
 
   static DateTime? _parseTimestamp(dynamic value) {
-    if (value is Timestamp) {
-      return value.toDate();
-    }
     if (value is DateTime) {
       return value;
+    }
+    if (value is String && value.isNotEmpty) {
+      try {
+        return DateTime.parse(value).toLocal();
+      } catch (_) {
+        return null;
+      }
+    }
+    if (value is int) {
+      try {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      } catch (_) {
+        return null;
+      }
     }
     return null;
   }
