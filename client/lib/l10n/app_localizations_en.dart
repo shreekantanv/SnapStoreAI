@@ -48,13 +48,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String homeToolCount(int count) {
-    final formatted = intl.NumberFormat.compact().format(count);
-    final noun = count == 1 ? 'tool' : 'tools';
-    return 'Explore $formatted handpicked $noun.';
+    return 'Explore $count handpicked tools.';
   }
 
   @override
-  String get favoritesCta => 'Tap the heart on any tool to curate your favorites.';
+  String get favoritesCta =>
+      'Tap the heart on any tool to curate your favorites.';
 
   @override
   String get tags => 'Tags';
@@ -94,7 +93,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get historyErrorMessage =>
-      "We couldn't load your activity right now.";
+      'We couldn\'t load your activity right now.';
 
   @override
   String get historyInputsLabel => 'Inputs';

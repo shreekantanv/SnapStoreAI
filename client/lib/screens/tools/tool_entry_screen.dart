@@ -122,7 +122,6 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                   // --- How it works (optional) ---
                   if (widget.tool.howItWorks.isNotEmpty) ...[
                     _SectionCard(
-                      title: 'How it works',
                       child: HowItWorksCarousel(steps: widget.tool.howItWorks),
                     ),
                     const SizedBox(height: 16),

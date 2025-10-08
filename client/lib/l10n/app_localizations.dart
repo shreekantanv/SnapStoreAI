@@ -247,7 +247,7 @@ abstract class AppLocalizations {
   /// No description provided for @historyErrorMessage.
   ///
   /// In en, this message translates to:
-  /// **"We couldn't load your activity right now."**
+  /// **'We couldn\'t load your activity right now.'**
   String get historyErrorMessage;
 
   /// No description provided for @historyInputsLabel.
