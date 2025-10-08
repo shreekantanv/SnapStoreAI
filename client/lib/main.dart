@@ -41,10 +41,11 @@ class MyApp extends StatelessWidget {
             context.read<AuthProvider>(),
             context.read<FirestoreProvider>(),
           ),
-          update: (_, auth, firestore, previous) => HistoryProvider(
-            auth,
-            firestore,
-          ),
+          update: (_, auth, firestore, previous) {
+            final provider = previous ?? HistoryProvider(auth, firestore);
+            provider.update(auth, firestore);
+            return provider;
+          },
         ),
       ],
       child: Consumer<ThemeProvider>(

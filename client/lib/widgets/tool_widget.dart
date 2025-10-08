@@ -29,6 +29,7 @@ class ToolCard extends StatelessWidget {
         children: [
           InkWell(
             onTap: onTap,
+            borderRadius: radius,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [

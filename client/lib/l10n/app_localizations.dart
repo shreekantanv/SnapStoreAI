@@ -196,6 +196,54 @@ abstract class AppLocalizations {
   /// **'History'**
   String get history;
 
+  /// No description provided for @historyEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No history yet'**
+  String get historyEmptyTitle;
+
+  /// No description provided for @historyEmptySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Run a tool to see your recent activity here.'**
+  String get historyEmptySubtitle;
+
+  /// No description provided for @historyErrorMessage.
+  ///
+  /// In en, this message translates to:
+  /// **"We couldn't load your activity right now."**
+  String get historyErrorMessage;
+
+  /// No description provided for @historyInputsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Inputs'**
+  String get historyInputsLabel;
+
+  /// No description provided for @historyOutputsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Results'**
+  String get historyOutputsLabel;
+
+  /// No description provided for @historyUnknownTool.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown tool'**
+  String get historyUnknownTool;
+
+  /// No description provided for @historyUnknownTime.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown time'**
+  String get historyUnknownTime;
+
+  /// No description provided for @retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get retry;
+
   /// No description provided for @settings.
   ///
   /// In en, this message translates to:

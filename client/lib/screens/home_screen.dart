@@ -1,15 +1,20 @@
+import 'dart:convert';
+
 import 'package:client/screens/settings_screen.dart';
 import 'package:client/screens/tools/tool_entry_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../l10n/app_localizations.dart';
-import '../providers/tool_provider.dart';
-import '../providers/auth_provider.dart';
-import '../providers/theme_provider.dart';
-import '../providers/favorite_tools_provider.dart';
-import '../widgets/tool_widget.dart';
 import '../models/tool.dart';
+import '../models/tool_activity.dart';
+import '../providers/auth_provider.dart';
+import '../providers/favorite_tools_provider.dart';
+import '../providers/history_provider.dart';
+import '../providers/theme_provider.dart';
+import '../providers/tool_provider.dart';
+import '../widgets/tool_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   static const routeName = '/home';
@@ -96,6 +101,9 @@ class _HomeScreenState extends State<HomeScreen> {
               if (i == 3) {
                 Navigator.of(context).push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
               } else {
+                if (i == 2) {
+                  context.read<HistoryProvider>().fetchHistory();
+                }
                 setState(() => _currentNavIndex = i);
               }
             },
@@ -115,7 +123,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 titleSpacing: 12,
                 title: Row(
                   children: [
-                    // app logo (optional)
                     Image.asset('assets/images/logo.png', height: 28),
                     const SizedBox(width: 8),
                     Text('SnapStoreAI', style: Theme.of(context).textTheme.titleMedium),
@@ -140,189 +147,293 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
             body: CustomScrollView(
-              slivers: [
-                // Search
-                SliverToBoxAdapter(
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                    child: _SearchBar(
-                      controller: _searchCtrl,
-                      hint: l10n.searchForTools,
-                      onChanged: (v) => setState(() => _search = v),
-                      onClear: () {
-                        _searchCtrl.clear();
-                        setState(() => _search = '');
-                      },
+              slivers: _currentNavIndex == 2
+                  ? _buildHistorySlivers(context, allTools)
+                  : _buildToolSlivers(
+                      context: context,
+                      l10n: l10n,
+                      categories: categories,
+                      tags: tags,
+                      displayTools: displayTools,
+                      favoritesProvider: favoritesProvider,
+                      showFavoritesOnly: showFavoritesOnly,
                     ),
-                  ),
-                ),
-
-                // Category chips
-                SliverToBoxAdapter(
-                  child: SizedBox(
-                    height: 44,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      scrollDirection: Axis.horizontal,
-                      itemCount: categories.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 10),
-                      itemBuilder: (context, i) {
-                        final cat = categories[i];
-                        final selected = cat == _selectedCategory;
-                        return FilterChip(
-                          selected: selected,
-                          onSelected: (_) => setState(() => _selectedCategory = cat),
-                          label: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (selected) ...[
-                                const Icon(Icons.check, size: 16),
-                                const SizedBox(width: 6),
-                              ],
-                              Text(cat == 'All' ? l10n.all : cat),
-                            ],
-                          ),
-                          showCheckmark: false,
-                          labelStyle: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                          ),
-                          selectedColor: cs.primary,
-                          side: BorderSide(color: cs.outlineVariant),
-                          backgroundColor: Theme.of(context).cardColor,
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                if (tags.isNotEmpty) ...[
-                  const SliverToBoxAdapter(child: SizedBox(height: 8)),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            l10n.tags,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: [
-                              for (final tag in tags)
-                                FilterChip(
-                                  label: Text(tag),
-                                  selected: _selectedTags.contains(tag),
-                                  onSelected: (_) {
-                                    setState(() {
-                                      if (_selectedTags.contains(tag)) {
-                                        _selectedTags.remove(tag);
-                                      } else {
-                                        _selectedTags.add(tag);
-                                      }
-                                    });
-                                  },
-                                ),
-                              if (_selectedTags.isNotEmpty)
-                                InputChip(
-                                  label: Text(l10n.clearTagFilters),
-                                  onPressed: () => setState(() {
-                                    _selectedTags.clear();
-                                  }),
-                                  avatar: const Icon(Icons.close, size: 18),
-                                ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-                const SliverToBoxAdapter(child: SizedBox(height: 8)),
-
-                // Grid or Empty state
-                if (showFavoritesOnly && !favoritesProvider.isLoaded)
-                  const SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: Center(child: CircularProgressIndicator()),
-                  )
-                else if (displayTools.isEmpty)
-                  SliverFillRemaining(
-                    hasScrollBody: false,
-                    child: _EmptyState(
-                      title: showFavoritesOnly
-                          ? l10n.noFavoritesTitle
-                          : l10n.noToolsFoundTitle,
-                      subtitle: showFavoritesOnly
-                          ? l10n.noFavoritesSubtitle
-                          : l10n.noToolsFoundSubtitle,
-                    ),
-                  )
-                else
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    sliver: SliverLayoutBuilder(
-                      builder: (context, constraints) {
-                        final cols = _columnsForWidth(context);
-                        // A tidy, uniform card height. Tweak 220–260 to taste.
-                        const tileHeight = 240.0;
-                        const gap = 14.0;
-                        final radius = BorderRadius.circular(16);
-
-                        return SliverGrid(
-                          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: cols,
-                            crossAxisSpacing: gap,
-                            mainAxisSpacing: gap,
-                            mainAxisExtent: tileHeight, // <- keeps rows perfectly aligned
-                          ),
-                          delegate: SliverChildBuilderDelegate(
-                                (context, idx) {
-                              final tool = displayTools[idx];
-                              return ClipRRect(
-                                borderRadius: radius, // ensures overlay/tile share same rounding
-                                child: Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    // Your visual card
-                                    ToolCard(
-                                      tool: tool,
-                                      isFavorite: favoritesProvider.isFavorite(tool.id),
-                                      onFavoriteToggle: () =>
-                                          favoritesProvider.toggleFavorite(tool.id),
-                                    ),
-
-                                    // Full-tile tap layer
-                                    Material(
-                                      type: MaterialType.transparency,
-                                      child: InkWell(
-                                        onTap: () => _onToolTap(tool),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                            childCount: displayTools.length,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                const SliverToBoxAdapter(child: SizedBox(height: 84)), // bottom padding
-              ],
             ),
           ),
         );
       },
     );
+  }
+
+  List<Widget> _buildToolSlivers({
+    required BuildContext context,
+    required AppLocalizations l10n,
+    required List<String> categories,
+    required List<String> tags,
+    required List<Tool> displayTools,
+    required FavoriteToolsProvider favoritesProvider,
+    required bool showFavoritesOnly,
+  }) {
+    final cs = Theme.of(context).colorScheme;
+
+    final slivers = <Widget>[
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: _SearchBar(
+            controller: _searchCtrl,
+            hint: l10n.searchForTools,
+            onChanged: (v) => setState(() => _search = v),
+            onClear: () {
+              _searchCtrl.clear();
+              setState(() => _search = '');
+            },
+          ),
+        ),
+      ),
+      SliverToBoxAdapter(
+        child: SizedBox(
+          height: 44,
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: categories.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            itemBuilder: (context, i) {
+              final cat = categories[i];
+              final selected = cat == _selectedCategory;
+              return FilterChip(
+                selected: selected,
+                onSelected: (_) => setState(() => _selectedCategory = cat),
+                label: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (selected) ...[
+                      const Icon(Icons.check, size: 16),
+                      const SizedBox(width: 6),
+                    ],
+                    Text(cat == 'All' ? l10n.all : cat),
+                  ],
+                ),
+                showCheckmark: false,
+                labelStyle: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+                ),
+                selectedColor: cs.primary,
+                side: BorderSide(color: cs.outlineVariant),
+                backgroundColor: Theme.of(context).cardColor,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: const VisualDensity(horizontal: -2, vertical: -2),
+              );
+            },
+          ),
+        ),
+      ),
+    ];
+
+    if (tags.isNotEmpty) {
+      slivers.addAll([
+        const SliverToBoxAdapter(child: SizedBox(height: 8)),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.tags,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final tag in tags)
+                      FilterChip(
+                        label: Text(tag),
+                        selected: _selectedTags.contains(tag),
+                        onSelected: (_) {
+                          setState(() {
+                            if (_selectedTags.contains(tag)) {
+                              _selectedTags.remove(tag);
+                            } else {
+                              _selectedTags.add(tag);
+                            }
+                          });
+                        },
+                      ),
+                    if (_selectedTags.isNotEmpty)
+                      InputChip(
+                        label: Text(l10n.clearTagFilters),
+                        onPressed: () => setState(() {
+                          _selectedTags.clear();
+                        }),
+                        avatar: const Icon(Icons.close, size: 18),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ]);
+    }
+
+    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 8)));
+
+    if (showFavoritesOnly && !favoritesProvider.isLoaded) {
+      slivers.add(
+        const SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      );
+    } else if (displayTools.isEmpty) {
+      slivers.add(
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _EmptyState(
+            title: showFavoritesOnly
+                ? l10n.noFavoritesTitle
+                : l10n.noToolsFoundTitle,
+            subtitle: showFavoritesOnly
+                ? l10n.noFavoritesSubtitle
+                : l10n.noToolsFoundSubtitle,
+          ),
+        ),
+      );
+    } else {
+      slivers.add(
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          sliver: SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final cols = _columnsForWidth(context);
+              const tileHeight = 240.0;
+              const gap = 14.0;
+
+              return SliverGrid(
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: cols,
+                  crossAxisSpacing: gap,
+                  mainAxisSpacing: gap,
+                  mainAxisExtent: tileHeight,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, idx) {
+                    final tool = displayTools[idx];
+                    return ToolCard(
+                      tool: tool,
+                      onTap: () => _onToolTap(tool),
+                      isFavorite: favoritesProvider.isFavorite(tool.id),
+                      onFavoriteToggle: () => favoritesProvider.toggleFavorite(tool.id),
+                    );
+                  },
+                  childCount: displayTools.length,
+                ),
+              );
+            },
+          ),
+        ),
+      );
+    }
+
+    slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 84)));
+    return slivers;
+  }
+
+  List<Widget> _buildHistorySlivers(BuildContext context, List<Tool> allTools) {
+    final l10n = AppLocalizations.of(context)!;
+    final history = context.watch<HistoryProvider>();
+    final errorMessage = history.error;
+
+    if (history.isLoading) {
+      return const [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Center(child: CircularProgressIndicator()),
+        ),
+      ];
+    }
+
+    if (errorMessage != null) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  l10n.historyErrorMessage,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                if (errorMessage.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    errorMessage,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => history.fetchHistory(),
+                  child: Text(l10n.retry),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ];
+    }
+
+    final activities = history.activities;
+    if (activities.isEmpty) {
+      return [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: _EmptyState(
+            title: l10n.historyEmptyTitle,
+            subtitle: l10n.historyEmptySubtitle,
+          ),
+        ),
+      ];
+    }
+
+    final toolById = {for (final tool in allTools) tool.id: tool};
+    final dateFormat = DateFormat.yMMMEd().add_jm();
+
+    return [
+      SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) {
+              final activity = activities[index];
+              final tool = toolById[activity.toolId];
+              return _HistoryEntryCard(
+                activity: activity,
+                tool: tool,
+                dateFormat: dateFormat,
+                l10n: l10n,
+                onTap: tool == null ? null : () => _onToolTap(tool),
+              );
+            },
+            childCount: activities.length,
+          ),
+        ),
+      ),
+      const SliverToBoxAdapter(child: SizedBox(height: 72)),
+    ];
   }
 
   // 1) helper: pick a good column count for the screen width
@@ -414,6 +525,189 @@ class _EmptyState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+final JsonEncoder _prettyEncoder = JsonEncoder.withIndent('  ');
+
+String _formatHistoryValue(dynamic value) {
+  if (value == null) return '—';
+  if (value is String) return value;
+  if (value is num || value is bool) return value.toString();
+  if (value is DateTime) return DateFormat.yMMMEd().add_jm().format(value);
+  if (value is List) {
+    return value.map(_formatHistoryValue).join(', ');
+  }
+  if (value is Map) {
+    try {
+      return _prettyEncoder.convert(value);
+    } catch (_) {
+      return value.toString();
+    }
+  }
+  return value.toString();
+}
+
+class _HistoryEntryCard extends StatelessWidget {
+  const _HistoryEntryCard({
+    required this.activity,
+    required this.tool,
+    required this.dateFormat,
+    required this.l10n,
+    this.onTap,
+  });
+
+  final ToolActivity activity;
+  final Tool? tool;
+  final DateFormat dateFormat;
+  final AppLocalizations l10n;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final tt = Theme.of(context).textTheme;
+    final timestamp = activity.timestamp;
+    final timeLabel = timestamp != null
+        ? dateFormat.format(timestamp)
+        : l10n.historyUnknownTime;
+    final subtitle = tool?.subtitle;
+
+    Widget buildThumbnail() {
+      if (tool?.imageUrl != null && tool!.imageUrl.isNotEmpty) {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.asset(
+            tool!.imageUrl,
+            fit: BoxFit.cover,
+          ),
+        );
+      }
+      return Icon(Icons.history, color: cs.primary);
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(18),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: cs.surfaceVariant,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: buildThumbnail(),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          tool?.title ?? l10n.historyUnknownTool,
+                          style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        if (subtitle != null && subtitle.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            subtitle,
+                            style: tt.bodySmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                        const SizedBox(height: 6),
+                        Text(
+                          timeLabel,
+                          style: tt.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (onTap != null)
+                    Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                ],
+              ),
+              if (activity.inputs.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _HistorySection(
+                  title: l10n.historyInputsLabel,
+                  values: activity.inputs,
+                ),
+              ],
+              if (activity.outputs.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                _HistorySection(
+                  title: l10n.historyOutputsLabel,
+                  values: activity.outputs,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _HistorySection extends StatelessWidget {
+  const _HistorySection({required this.title, required this.values});
+
+  final String title;
+  final Map<String, dynamic> values;
+
+  @override
+  Widget build(BuildContext context) {
+    if (values.isEmpty) return const SizedBox.shrink();
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        ...values.entries.map((entry) {
+          final valueText = _formatHistoryValue(entry.value);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  entry.key,
+                  style: tt.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                SelectableText(
+                  valueText,
+                  style: tt.bodyMedium,
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 }

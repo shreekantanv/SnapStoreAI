@@ -20,7 +20,7 @@ class FirestoreProvider {
     });
   }
 
-  Stream<QuerySnapshot> getActivity(String uid) {
+  Stream<QuerySnapshot<Map<String, dynamic>>> getActivity(String uid) {
     return _firestore
         .collection('user_activity')
         .where('uid', isEqualTo: uid)

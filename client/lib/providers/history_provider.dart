@@ -1,17 +1,24 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:client/providers/auth_provider.dart';
-import 'package:client/providers/firestore_provider.dart';
+import 'package:flutter/foundation.dart';
+
+import '../models/tool_activity.dart';
+import 'auth_provider.dart';
+import 'firestore_provider.dart';
 
 class HistoryProvider extends ChangeNotifier {
-  final AuthProvider authProvider;
-  final FirestoreProvider firestoreProvider;
-
-  HistoryProvider(this.authProvider, this.firestoreProvider) {
-    _listenToAuthChanges();
+  HistoryProvider(AuthProvider authProvider, FirestoreProvider firestoreProvider) {
+    _authProvider = authProvider;
+    _firestoreProvider = firestoreProvider;
+    _authListener = _handleAuthChanged;
+    _authProvider.addListener(_authListener!);
+    _handleAuthChanged();
   }
+
+  late AuthProvider _authProvider;
+  late FirestoreProvider _firestoreProvider;
+  VoidCallback? _authListener;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -19,28 +26,30 @@ class HistoryProvider extends ChangeNotifier {
   String? _error;
   String? get error => _error;
 
-  List<QueryDocumentSnapshot> _activities = [];
-  List<QueryDocumentSnapshot> get activities => _activities;
+  final List<ToolActivity> _activities = <ToolActivity>[];
+  List<ToolActivity> get activities => List.unmodifiable(_activities);
 
-  StreamSubscription<QuerySnapshot>? _historySubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _historySubscription;
+  String? _currentUid;
 
-  void _listenToAuthChanges() {
-    authProvider.addListener(() {
-      if (authProvider.user != null) {
-        fetchHistory();
-      } else {
-        _clearSubscription();
-        _activities = [];
-        _isLoading = false;
-        _error = null;
-        notifyListeners();
-      }
-    });
+  void update(AuthProvider authProvider, FirestoreProvider firestoreProvider) {
+    if (!identical(_authProvider, authProvider)) {
+      _authProvider.removeListener(_authListener!);
+      _authProvider = authProvider;
+      _authProvider.addListener(_authListener!);
+    }
+    _firestoreProvider = firestoreProvider;
+    _handleAuthChanged();
   }
 
   Future<void> fetchHistory() async {
-    if (authProvider.user == null) return;
+    final uid = _authProvider.user?.uid;
+    if (uid == null) {
+      _resetState();
+      return;
+    }
 
+    _currentUid = uid;
     await _historySubscription?.cancel();
 
     _isLoading = true;
@@ -48,21 +57,55 @@ class HistoryProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final stream = firestoreProvider.getActivity(authProvider.user!.uid);
-      _historySubscription = stream.listen((snapshot) {
-        _activities = snapshot.docs;
-        _isLoading = false;
-        notifyListeners();
-      }, onError: (Object e) {
-        _error = e.toString();
-        _isLoading = false;
-        notifyListeners();
-      });
+      final stream = _firestoreProvider.getActivity(uid);
+      _historySubscription = stream.listen(
+        (snapshot) {
+          final items = snapshot.docs
+              .map(ToolActivity.fromSnapshot)
+              .whereType<ToolActivity>()
+              .toList(growable: false);
+          _activities
+            ..clear()
+            ..addAll(items);
+          _isLoading = false;
+          _error = null;
+          notifyListeners();
+        },
+        onError: (Object e) {
+          _error = e.toString();
+          _isLoading = false;
+          notifyListeners();
+        },
+      );
     } catch (e) {
       _error = e.toString();
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  void _handleAuthChanged() {
+    final uid = _authProvider.user?.uid;
+    if (uid == null) {
+      _currentUid = null;
+      _resetState();
+      return;
+    }
+
+    if (_currentUid == uid && _historySubscription != null) {
+      return;
+    }
+
+    _currentUid = uid;
+    fetchHistory();
+  }
+
+  void _resetState() {
+    _clearSubscription();
+    _activities.clear();
+    _isLoading = false;
+    _error = null;
+    notifyListeners();
   }
 
   void _clearSubscription() {
@@ -72,6 +115,10 @@ class HistoryProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    if (_authListener != null) {
+      _authProvider.removeListener(_authListener!);
+      _authListener = null;
+    }
     _clearSubscription();
     super.dispose();
   }

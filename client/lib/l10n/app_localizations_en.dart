@@ -62,6 +62,32 @@ class AppLocalizationsEn extends AppLocalizations {
   String get history => 'History';
 
   @override
+  String get historyEmptyTitle => 'No history yet';
+
+  @override
+  String get historyEmptySubtitle =>
+      'Run a tool to see your recent activity here.';
+
+  @override
+  String get historyErrorMessage =>
+      "We couldn't load your activity right now.";
+
+  @override
+  String get historyInputsLabel => 'Inputs';
+
+  @override
+  String get historyOutputsLabel => 'Results';
+
+  @override
+  String get historyUnknownTool => 'Unknown tool';
+
+  @override
+  String get historyUnknownTime => 'Unknown time';
+
+  @override
+  String get retry => 'Retry';
+
+  @override
   String get settings => 'Settings';
 
   @override
