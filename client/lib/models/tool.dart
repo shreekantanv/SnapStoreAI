@@ -1,5 +1,6 @@
 import 'feature_pill.dart';
 import 'how_it_works_step.dart';
+import 'ai_provider.dart';
 
 class InputField {
   final String id;
@@ -30,7 +31,7 @@ class Tool {
   final String subtitle;
   final String? description;
   final String imageUrl;
-  final String category;
+  final List<String> categories;
   final List<String> tags;
   final String? prompt;
   final int creditCost;
@@ -39,6 +40,7 @@ class Tool {
   final List<HowItWorksStep> howItWorks;
   final List<FeaturePill> featurePills;
   final List<String> suggestedTools;
+  final AiProvider? aiProvider;
 
   Tool({
     required this.id,
@@ -46,7 +48,7 @@ class Tool {
     required this.subtitle,
     this.description,
     required this.imageUrl,
-    required this.category,
+    this.categories = const [],
     this.tags = const [],
     this.prompt,
     required this.creditCost,
@@ -55,6 +57,7 @@ class Tool {
     this.howItWorks = const [],
     this.featurePills = const [],
     this.suggestedTools = const [],
+    this.aiProvider,
   });
 
   factory Tool.fromJson(Map<String, dynamic> json, String id) {
@@ -64,7 +67,7 @@ class Tool {
       subtitle: json['subtitle'] as String,
       description: json['description'] as String?,
       imageUrl: json['imageUrl'] as String,
-      category: json['category'] as String,
+      categories: _parseCategories(json),
       tags: (json['tags'] as List<dynamic>?)
               ?.map((e) => e as String)
               .where((element) => element.trim().isNotEmpty)
@@ -89,6 +92,26 @@ class Tool {
               ?.map((e) => e as String)
               .toList() ??
           [],
+      aiProvider: AiProviderInfo.fromId(json['aiProvider'] as String?),
     );
   }
+}
+
+List<String> _parseCategories(Map<String, dynamic> json) {
+  final categories = (json['categories'] as List<dynamic>?)
+          ?.map((e) => (e as String).trim())
+          .where((element) => element.isNotEmpty)
+          .toList(growable: false) ??
+      const [];
+
+  if (categories.isNotEmpty) {
+    return categories;
+  }
+
+  final legacyCategory = (json['category'] as String?)?.trim();
+  if (legacyCategory != null && legacyCategory.isNotEmpty) {
+    return [legacyCategory];
+  }
+
+  return const [];
 }

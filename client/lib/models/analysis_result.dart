@@ -1,8 +1,11 @@
+import 'dart:typed_data';
+
 enum AnalysisStatus { loading, success, empty, error }
 
 class AnalysisResult {
   final AnalysisStatus status;
   final String? subjectImage;
+  final Uint8List? subjectImageBytes;
   final Spectrum? spectrum;
   final List<ResultAlignment>? alignments;
   final List<KeywordGroup>? keywords;
@@ -13,6 +16,7 @@ class AnalysisResult {
   AnalysisResult({
     this.status = AnalysisStatus.success,
     this.subjectImage,
+    this.subjectImageBytes,
     this.spectrum,
     this.alignments,
     this.keywords,
@@ -24,6 +28,7 @@ class AnalysisResult {
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
     return AnalysisResult(
       subjectImage: json['subjectImage'] as String?,
+      subjectImageBytes: null,
       spectrum: json['spectrum'] != null
           ? Spectrum.fromJson(json['spectrum'] as Map<String, dynamic>)
           : null,

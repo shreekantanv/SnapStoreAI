@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:client/screens/settings_screen.dart';
 import 'package:client/screens/tools/tool_entry_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,6 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/tool.dart';
 import '../models/tool_activity.dart';
-import '../providers/auth_provider.dart';
 import '../providers/favorite_tools_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/theme_provider.dart';
@@ -34,6 +34,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ToolProvider>().ensureLoaded();
+    });
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
@@ -55,165 +63,208 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
-    return StreamBuilder<List<Tool>>(
-      stream: prov.tools,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        if (snapshot.hasError) {
-          return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
-        }
-        final allTools = snapshot.data ?? [];
-        final categorySet = <String>{...allTools.map((t) => t.category)}
-          ..removeWhere((element) => element.trim().isEmpty);
-        final categories = ['All', ...categorySet.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
-        final tags = allTools
-            .expand((t) => t.tags)
-            .map((e) => e.trim())
-            .where((tag) => tag.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
-
-        final filtered = allTools.where((t) {
-          final q = _search.trim().toLowerCase();
-          final matchesSearch = q.isEmpty ||
-              t.title.toLowerCase().contains(q) ||
-              t.subtitle.toLowerCase().contains(q);
-          final matchesCategory =
-              _selectedCategory == 'All' || t.category == _selectedCategory;
-          final matchesTags =
-              _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
-          return matchesSearch && matchesCategory && matchesTags;
-        }).toList();
-
-        final showFavoritesOnly = _currentNavIndex == 1;
-        final displayTools = filtered
-            .where(
-              (tool) =>
-                  !showFavoritesOnly || favoritesProvider.isFavorite(tool.id),
-            )
-            .toList();
-
-        final gradients = Theme.of(context).extension<PremiumGradients>();
-        final auth = context.watch<AuthProvider>();
-        final displayName = auth.user?.displayName?.trim();
-        final heroTitle = displayName != null && displayName.isNotEmpty
-            ? l10n.homeHeroTitle(displayName)
-            : l10n.homeHeroGeneric;
-
-        return DecoratedBox(
-          decoration: BoxDecoration(gradient: gradients?.scaffoldGradient),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            extendBody: true,
-            bottomNavigationBar: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(26),
-                child: BackdropFilter(
-                  filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
-                  child: BottomNavigationBar(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surface.withOpacity(0.88),
-                    currentIndex: _currentNavIndex,
-                    onTap: (i) {
-                      if (i == 3) {
-                        Navigator.of(context)
-                            .push(MaterialPageRoute(builder: (_) => const SettingsScreen()));
-                      } else {
-                        if (i == 2) {
-                          context.read<HistoryProvider>().fetchHistory();
-                        }
-                        setState(() => _currentNavIndex = i);
-                      }
-                    },
-                    items: [
-                      BottomNavigationBarItem(icon: const Icon(Icons.widgets), label: l10n.tools),
-                      BottomNavigationBarItem(icon: const Icon(Icons.favorite), label: l10n.favorites),
-                      BottomNavigationBarItem(icon: const Icon(Icons.history_toggle_off), label: l10n.history),
-                      BottomNavigationBarItem(icon: const Icon(Icons.settings), label: l10n.settings),
-                    ],
-                  ),
+    if (prov.error != null && !prov.hasLoaded) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Unable to load tools',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
                 ),
-              ),
-            ),
-            body: SafeArea(
-              bottom: false,
-              child: NestedScrollView(
-                headerSliverBuilder: (_, __) => [
-                  SliverAppBar(
-                    pinned: true,
-                    stretch: true,
-                    centerTitle: false,
-                    toolbarHeight: 86,
-                    backgroundColor: Colors.transparent,
-                    titleSpacing: 20,
-                    title: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          heroTitle,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleLarge
-                              ?.copyWith(letterSpacing: -0.4),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          l10n.homeHeroSubtitle,
-                          style: Theme.of(context)
-                              .textTheme
-                              .labelLarge
-                              ?.copyWith(
-                                color: Theme.of(context)
-                                    .colorScheme
-                                    .onBackground
-                                    .withOpacity(0.7),
-                              ),
-                        ),
-                      ],
-                    ),
-                    actions: [
-                      IconButton(
-                        icon: Icon(
-                          themeProvider.themeMode == ThemeMode.light
-                              ? Icons.dark_mode
-                              : Icons.light_mode,
-                        ),
-                        tooltip: l10n.settings,
-                        onPressed: () => context.read<ThemeProvider>().toggleTheme(),
-                      ),
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: const Icon(Icons.logout),
-                        tooltip: 'Sign out',
-                        onPressed: () => context.read<AuthProvider>().signOut(),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
+                const SizedBox(height: 8),
+                Text(
+                  'We couldn\'t load the tool catalog right now.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: cs.onSurface.withOpacity(0.7)),
+                  textAlign: TextAlign.center,
+                ),
+                if (prov.error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    prov.error.toString(),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: cs.onSurface.withOpacity(0.5)),
+                    textAlign: TextAlign.center,
                   ),
                 ],
-                body: CustomScrollView(
-                  slivers: _currentNavIndex == 2
-                      ? _buildHistorySlivers(context, allTools)
-                      : _buildToolSlivers(
-                          context: context,
-                          l10n: l10n,
-                          categories: categories,
-                          tags: tags,
-                          displayTools: displayTools,
-                          favoritesProvider: favoritesProvider,
-                          showFavoritesOnly: showFavoritesOnly,
-                        ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () => context.read<ToolProvider>().refresh(),
+                  child: Text(l10n.retry),
                 ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (!prov.hasLoaded) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final allTools = prov.tools;
+    final categorySet = <String>{
+      ...allTools.expand((t) => t.categories),
+    }..removeWhere((element) => element.trim().isEmpty);
+
+    final categories = [
+      'All',
+      ...categorySet.toList()
+        ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))
+    ];
+
+    final tags = allTools
+        .expand((t) => t.tags)
+        .map((e) => e.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+
+    final filtered = allTools.where((t) {
+      final q = _search.trim().toLowerCase();
+      final matchesSearch =
+          q.isEmpty || t.title.toLowerCase().contains(q) || t.subtitle.toLowerCase().contains(q);
+      final matchesCategory =
+          _selectedCategory == 'All' || t.categories.contains(_selectedCategory);
+      final matchesTags = _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
+      return matchesSearch && matchesCategory && matchesTags;
+    }).toList();
+
+    final showFavoritesOnly = _currentNavIndex == 1;
+    final displayTools = filtered
+        .where((tool) => !showFavoritesOnly || favoritesProvider.isFavorite(tool.id))
+        .toList();
+
+    final gradients = Theme.of(context).extension<PremiumGradients>();
+    final heroTitle = l10n.homeHeroGeneric;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: gradients?.scaffoldGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        bottomNavigationBar: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(26),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+              child: BottomNavigationBar(
+                backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.88),
+                currentIndex: _currentNavIndex,
+                onTap: (i) {
+                  if (i == 3) {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    );
+                  } else {
+                    if (i == 2) {
+                      context.read<HistoryProvider>().fetchHistory();
+                    }
+                    setState(() => _currentNavIndex = i);
+                  }
+                },
+                items: [
+                  BottomNavigationBarItem(icon: const Icon(Icons.widgets), label: l10n.tools),
+                  BottomNavigationBarItem(icon: const Icon(Icons.favorite), label: l10n.favorites),
+                  BottomNavigationBarItem(
+                      icon: const Icon(Icons.history_toggle_off), label: l10n.history),
+                  BottomNavigationBarItem(icon: const Icon(Icons.settings), label: l10n.settings),
+                ],
               ),
             ),
           ),
-        );
-      },
+        ),
+        body: SafeArea(
+          bottom: false,
+          child: NestedScrollView(
+            headerSliverBuilder: (_, __) => [
+              SliverAppBar(
+                pinned: true,
+                stretch: true,
+                centerTitle: false,
+                toolbarHeight: 86,
+                backgroundColor: Colors.transparent,
+                titleSpacing: 20,
+                title: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      heroTitle,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(letterSpacing: -0.4),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      l10n.homeHeroSubtitle,
+                      style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                        color: Theme.of(context).colorScheme.onBackground.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  if (kDebugMode)
+                    IconButton(
+                      icon: const Icon(Icons.upload_file),
+                      tooltip: 'Upload Tool JSON',
+                      onPressed: () => Navigator.of(context).pushNamed('/admin/uploader'),
+                    ),
+                  IconButton(
+                    icon: Icon(
+                      themeProvider.themeMode == ThemeMode.light
+                          ? Icons.dark_mode
+                          : Icons.light_mode,
+                    ),
+                    tooltip: l10n.settings,
+                    onPressed: () => context.read<ThemeProvider>().toggleTheme(),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    tooltip: l10n.settings,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
+              ),
+            ],
+            body: CustomScrollView(
+              slivers: _currentNavIndex == 2
+                  ? _buildHistorySlivers(context, allTools)
+                  : _buildToolSlivers(
+                context: context,
+                l10n: l10n,
+                categories: categories,
+                tags: tags,
+                displayTools: displayTools,
+                favoritesProvider: favoritesProvider,
+                showFavoritesOnly: showFavoritesOnly,
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -236,9 +287,7 @@ class _HomeScreenState extends State<HomeScreen> {
           child: _HeroBanner(
             gradients: gradients,
             title: showFavoritesOnly ? l10n.favorites : l10n.premiumHighlights,
-            subtitle: showFavoritesOnly
-                ? l10n.favoritesCta
-                : l10n.homeToolCount(displayTools.length),
+            subtitle: showFavoritesOnly ? l10n.favoritesCta : l10n.homeToolCount(displayTools.length),
             icon: showFavoritesOnly ? Icons.favorite : Icons.auto_awesome,
           ),
         ),
@@ -273,18 +322,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 selected: selected,
                 label: Text(cat == 'All' ? l10n.all : cat),
                 onSelected: (_) => setState(() => _selectedCategory = cat),
-                avatar: selected
-                    ? const Icon(Icons.check_rounded, size: 18)
-                    : null,
+                avatar: selected ? const Icon(Icons.check_rounded, size: 18) : null,
                 labelStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: selected ? cs.onPrimary : cs.onSurfaceVariant,
-                    ),
+                  color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+                ),
                 selectedColor: cs.primary,
-                backgroundColor: Theme.of(context)
-                    .colorScheme
-                    .surface
-                    .withOpacity(0.8),
-                pressElevation: 0,
+                backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.8),
                 visualDensity: const VisualDensity(horizontal: -3, vertical: -3),
               );
             },
@@ -310,8 +353,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Text(
                       l10n.tags,
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                            fontWeight: FontWeight.w700,
-                          ),
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Wrap(
@@ -336,7 +379,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 ? const Icon(Icons.check_rounded, size: 18)
                                 : null,
                             backgroundColor:
-                                Theme.of(context).colorScheme.surface.withOpacity(0.85),
+                            Theme.of(context).colorScheme.surface.withOpacity(0.85),
                           ),
                         if (_selectedTags.isNotEmpty)
                           ActionChip(
@@ -371,12 +414,9 @@ class _HomeScreenState extends State<HomeScreen> {
         SliverFillRemaining(
           hasScrollBody: false,
           child: _EmptyState(
-            title: showFavoritesOnly
-                ? l10n.noFavoritesTitle
-                : l10n.noToolsFoundTitle,
-            subtitle: showFavoritesOnly
-                ? l10n.noFavoritesSubtitle
-                : l10n.noToolsFoundSubtitle,
+            title: showFavoritesOnly ? l10n.noFavoritesTitle : l10n.noToolsFoundTitle,
+            subtitle:
+            showFavoritesOnly ? l10n.noFavoritesSubtitle : l10n.noToolsFoundSubtitle,
           ),
         ),
       );
@@ -398,7 +438,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisExtent: tileHeight,
                 ),
                 delegate: SliverChildBuilderDelegate(
-                  (context, idx) {
+                      (context, idx) {
                     final tool = displayTools[idx];
                     return ToolCard(
                       tool: tool,
@@ -453,9 +493,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   Text(
                     errorMessage,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.error,
-                        ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: Theme.of(context).colorScheme.error),
                   ),
                 ],
                 const SizedBox(height: 16),
@@ -491,7 +532,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
         sliver: SliverList(
           delegate: SliverChildBuilderDelegate(
-            (context, index) {
+                (context, index) {
               final activity = activities[index];
               final tool = toolById[activity.toolId];
               return _HistoryEntryCard(
@@ -543,10 +584,10 @@ class _SearchBar extends StatelessWidget {
         hintText: hint,
         suffixIcon: controller.text.isNotEmpty
             ? IconButton(
-                icon: const Icon(Icons.close),
-                tooltip: 'Clear search',
-                onPressed: onClear,
-              )
+          icon: const Icon(Icons.close),
+          tooltip: 'Clear search',
+          onPressed: onClear,
+        )
             : null,
       ),
     );
@@ -677,10 +718,8 @@ class _EmptyState extends StatelessWidget {
           Text(
             subtitle,
             textAlign: TextAlign.center,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style:
+            Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
           ),
         ],
       ),
@@ -728,9 +767,7 @@ class _HistoryEntryCard extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final tt = Theme.of(context).textTheme;
     final timestamp = activity.timestamp;
-    final timeLabel = timestamp != null
-        ? dateFormat.format(timestamp)
-        : l10n.historyUnknownTime;
+    final timeLabel = timestamp != null ? dateFormat.format(timestamp) : l10n.historyUnknownTime;
     final subtitle = tool?.subtitle;
 
     Widget buildThumbnail() {
@@ -818,8 +855,7 @@ class _HistoryEntryCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    if (onTap != null)
-                      Icon(Icons.north_east, color: cs.onSurfaceVariant),
+                    if (onTap != null) Icon(Icons.north_east, color: cs.onSurfaceVariant),
                   ],
                 ),
                 if (activity.inputs.isNotEmpty) ...[

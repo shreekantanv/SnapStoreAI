@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
+import 'admin/jsontooluploader.dart';
 import 'firebase_options.dart'; // generated via flutterfire CLI
 import 'l10n/app_localizations.dart';
-import 'providers/auth_provider.dart';
+import 'providers/api_key_provider.dart';
 import 'providers/history_provider.dart';
 import 'providers/tool_provider.dart';
 import 'providers/theme_provider.dart';
@@ -13,7 +14,6 @@ import 'theme/app_theme.dart';
 
 import 'screens/splash_screen.dart';
 import 'screens/onboarding_screen.dart';
-import 'screens/auth_screen.dart';
 import 'screens/home_screen.dart';
 
 void main() async {
@@ -31,18 +31,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        Provider(create: (_) => ToolProvider()),
+        ChangeNotifierProvider(create: (_) => ApiKeyProvider()),
+        ChangeNotifierProvider(create: (_) => ToolProvider()),
         ChangeNotifierProvider(create: (_) => FavoriteToolsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        ChangeNotifierProxyProvider<AuthProvider, HistoryProvider>(
-          create: (_) => HistoryProvider(),
-          update: (_, auth, previous) {
-            final provider = previous ?? HistoryProvider();
-            provider.update(auth);
-            return provider;
-          },
-        ),
+        ChangeNotifierProvider(create: (_) => HistoryProvider()),
       ],
       child: Consumer<ThemeProvider>(
         builder: (context, themeProvider, child) {
@@ -57,8 +50,8 @@ class MyApp extends StatelessWidget {
             routes: {
               SplashScreen.routeName: (_) => const SplashScreen(),
               OnboardingScreen.routeName: (_) => const OnboardingScreen(),
-              AuthScreen.routeName: (_) => const AuthScreen(),
               HomeScreen.routeName: (_) => const HomeScreen(),
+              '/admin/uploader': (_) => const JsonToolUploaderScreen(),
             },
           );
         },
