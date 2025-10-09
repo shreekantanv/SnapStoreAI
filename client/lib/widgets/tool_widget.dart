@@ -104,17 +104,17 @@ class ToolCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 Text(
                   tool.title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w700),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 Text(
                   tool.subtitle,
-                  maxLines: 3,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: tt.bodySmall?.copyWith(
                     color: cs.onSurfaceVariant,
