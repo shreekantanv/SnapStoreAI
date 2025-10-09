@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
+import 'admin/jsontooluploader.dart';
 import 'firebase_options.dart'; // generated via flutterfire CLI
 import 'l10n/app_localizations.dart';
 import 'providers/api_key_provider.dart';
@@ -50,6 +51,7 @@ class MyApp extends StatelessWidget {
               SplashScreen.routeName: (_) => const SplashScreen(),
               OnboardingScreen.routeName: (_) => const OnboardingScreen(),
               HomeScreen.routeName: (_) => const HomeScreen(),
+              '/admin/uploader': (_) => const JsonToolUploaderScreen(),
             },
           );
         },

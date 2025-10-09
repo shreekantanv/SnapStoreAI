@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:client/screens/settings_screen.dart';
 import 'package:client/screens/tools/tool_entry_screen.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -221,6 +222,12 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
                 actions: [
+                  if (kDebugMode)
+                    IconButton(
+                      icon: const Icon(Icons.upload_file),
+                      tooltip: 'Upload Tool JSON',
+                      onPressed: () => Navigator.of(context).pushNamed('/admin/uploader'),
+                    ),
                   IconButton(
                     icon: Icon(
                       themeProvider.themeMode == ThemeMode.light
