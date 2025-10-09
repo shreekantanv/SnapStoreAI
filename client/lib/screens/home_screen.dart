@@ -135,13 +135,18 @@ class _HomeScreenState extends State<HomeScreen> {
         .toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
+    final normalizedSelectedTags =
+        _selectedTags.map((tag) => tag.toLowerCase()).toSet();
+
     final filtered = allTools.where((t) {
       final q = _search.trim().toLowerCase();
       final matchesSearch =
           q.isEmpty || t.title.toLowerCase().contains(q) || t.subtitle.toLowerCase().contains(q);
       final matchesCategory =
           _selectedCategory == 'All' || t.categories.contains(_selectedCategory);
-      final matchesTags = _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
+      final toolTagSet = t.tags.map((tag) => tag.trim().toLowerCase()).toSet();
+      final matchesTags =
+          normalizedSelectedTags.isEmpty || normalizedSelectedTags.every(toolTagSet.contains);
       return matchesSearch && matchesCategory && matchesTags;
     }).toList();
 
