@@ -160,23 +160,11 @@ abstract class AppLocalizations {
   /// **'Curated AI tools to elevate your workflow.'**
   String get homeHeroSubtitle;
 
-  /// No description provided for @premiumHighlights.
-  ///
-  /// In en, this message translates to:
-  /// **'Premium highlights'**
-  String get premiumHighlights;
-
   /// No description provided for @homeToolCount.
   ///
   /// In en, this message translates to:
   /// **'Explore {count} handpicked tools.'**
   String homeToolCount(int count);
-
-  /// No description provided for @favoritesCta.
-  ///
-  /// In en, this message translates to:
-  /// **'Tap the heart on any tool to curate your favorites.'**
-  String get favoritesCta;
 
   /// No description provided for @tags.
   ///

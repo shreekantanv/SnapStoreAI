@@ -294,24 +294,11 @@ class _HomeScreenState extends State<HomeScreen> {
     required bool showFavoritesOnly,
   }) {
     final cs = Theme.of(context).colorScheme;
-    final gradients = Theme.of(context).extension<PremiumGradients>();
 
     final slivers = <Widget>[
       SliverToBoxAdapter(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-          child: _HeroBanner(
-            gradients: gradients,
-            title: showFavoritesOnly ? l10n.favorites : l10n.premiumHighlights,
-            subtitle: showFavoritesOnly ? l10n.favoritesCta : l10n.homeToolCount(displayTools.length),
-            icon: showFavoritesOnly ? Icons.favorite : Icons.auto_awesome,
-          ),
-        ),
-      ),
-      const SliverToBoxAdapter(child: SizedBox(height: 12)),
-      SliverToBoxAdapter(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
           child: _SearchBar(
             controller: _searchCtrl,
             hint: l10n.searchForTools,
@@ -615,89 +602,6 @@ class _SearchBar extends StatelessWidget {
           onPressed: onClear,
         )
             : null,
-      ),
-    );
-  }
-}
-
-class _HeroBanner extends StatelessWidget {
-  const _HeroBanner({
-    required this.gradients,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  final PremiumGradients? gradients;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final tt = Theme.of(context).textTheme;
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(30),
-        gradient: gradients?.heroGlow ??
-            LinearGradient(
-              colors: [
-                cs.primary.withOpacity(0.65),
-                cs.secondary.withOpacity(0.55),
-              ],
-            ),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(30),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(30),
-              gradient: gradients?.cardGradient,
-              border: Border.all(color: cs.outline.withOpacity(0.08)),
-            ),
-            padding: const EdgeInsets.fromLTRB(22, 22, 22, 24),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 54,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    color: cs.primary.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Icon(icon, color: cs.primary, size: 28),
-                ),
-                const SizedBox(width: 18),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: tt.titleLarge?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        subtitle,
-                        style: tt.bodyMedium?.copyWith(
-                          color: cs.onSurfaceVariant,
-                          height: 1.35,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(Icons.auto_awesome, color: cs.tertiary, size: 28),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }

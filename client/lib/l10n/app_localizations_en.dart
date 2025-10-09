@@ -44,16 +44,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homeHeroSubtitle => 'Curated AI tools to elevate your workflow.';
 
   @override
-  String get premiumHighlights => 'Premium highlights';
-
-  @override
   String homeToolCount(int count) {
     return 'Explore $count handpicked tools.';
   }
-
-  @override
-  String get favoritesCta =>
-      'Tap the heart on any tool to curate your favorites.';
 
   @override
   String get tags => 'Tags';
