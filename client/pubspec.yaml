@@ -52,6 +52,10 @@ dependencies:
   # Secure storage
   flutter_secure_storage: ^9.1.1
 
+  image_picker: ^1.0.7
+  mime: ^1.0.5
+  http_parser: ^4.0.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

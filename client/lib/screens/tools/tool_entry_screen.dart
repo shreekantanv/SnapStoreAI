@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import 'package:client/models/ai_provider.dart';
 import 'package:client/models/tool.dart';
+import 'package:client/models/tool_input_value.dart';
+import 'package:client/screens/tools/ghibli_result_screen.dart';
+import 'package:client/services/ghibli_style_service.dart';
 import 'package:client/utils/icon_mapper.dart';
 import 'package:client/widgets/dynamic_input_widget.dart';
 import 'package:client/widgets/feature_pill_widget.dart';
@@ -23,8 +26,21 @@ class ToolEntryScreen extends StatefulWidget {
 }
 
 class _ToolEntryScreenState extends State<ToolEntryScreen> {
-  final _inputValues = <String, String>{};
+  final _inputValues = <String, ToolInputValue>{};
+  late final GhibliStyleService _ghibliService;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ghibliService = GhibliStyleService();
+  }
+
+  @override
+  void dispose() {
+    _ghibliService.dispose();
+    super.dispose();
+  }
 
   Future<void> _runTool() async {
     final l10n = AppLocalizations.of(context)!;
@@ -46,13 +62,88 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
       return;
     }
 
+    final hasImageInput = widget.tool.inputFields.any((f) => f.type == 'image');
+    if (!hasImageInput) {
+      setState(() => _isLoading = true);
+      try {
+        final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))));
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
+      }
+      return;
+    }
+
+    final imageField = widget.tool.inputFields.firstWhere((f) => f.type == 'image');
+    final imageValue = _inputValues[imageField.id];
+    if (imageValue == null || !imageValue.hasBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolImageRequired)),
+      );
+      return;
+    }
+
     setState(() => _isLoading = true);
     try {
       final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))),
       );
-      // TODO: Integrate actual tool execution using [apiKey] for [provider].
+
+      final promptBuffer = StringBuffer();
+      final basePrompt = widget.tool.prompt?.trim();
+      if (basePrompt != null && basePrompt.isNotEmpty) {
+        promptBuffer.writeln(basePrompt);
+      } else {
+        promptBuffer.writeln(
+          'Turn this photo into a whimsical Studio Ghibli style illustration with rich colors and soft lighting.',
+        );
+      }
+
+      final additionalInstructions = widget.tool.inputFields
+          .where((f) => f.type == 'text')
+          .map((f) => _inputValues[f.id]?.text)
+          .whereType<String>()
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList();
+
+      if (additionalInstructions.isNotEmpty) {
+        promptBuffer
+          ..writeln()
+          ..writeln('Additional instructions:')
+          ..writeln(additionalInstructions.join('\n'));
+      }
+
+      final result = await _ghibliService.stylize(
+        provider: provider,
+        apiKey: apiKey,
+        imageBytes: imageValue.bytes!,
+        imageMimeType: imageValue.mimeType ?? 'image/png',
+        prompt: promptBuffer.toString(),
+      );
+
+      if (!mounted) return;
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => GhibliResultScreen(
+            imageBytes: result.imageBytes,
+            tool: widget.tool,
+          ),
+        ),
+      );
+    } on UnsupportedError catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.ghibliProviderUnsupported)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.ghibliRunFailed(e.toString()))),
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -201,9 +292,14 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                         for (final field in widget.tool.inputFields) ...[
                           DynamicInputWidget(
                             field: field,
+                            initialValue: _inputValues[field.id],
                             onChanged: (value) {
                               setState(() {
-                                _inputValues[field.id] = value;
+                                if (value.isEmpty) {
+                                  _inputValues.remove(field.id);
+                                } else {
+                                  _inputValues[field.id] = value;
+                                }
                               });
                             },
                           ),

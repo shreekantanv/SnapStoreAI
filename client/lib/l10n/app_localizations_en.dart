@@ -163,6 +163,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'Running with your $provider API key ending in $suffix.';
 
   @override
+  String get toolImageRequired => 'Please upload a photo to continue.';
+
+  @override
+  String get imagePickerUploadButton => 'Upload photo';
+
+  @override
+  String get imagePickerReplaceButton => 'Replace photo';
+
+  @override
+  String get imagePickerRemoveButton => 'Remove photo';
+
+  @override
+  String get ghibliProviderUnsupported =>
+      'This tool currently works with a ChatGPT-compatible API key.';
+
+  @override
+  String ghibliRunFailed(String error) => "We couldn't generate your artwork. $error";
+
+  @override
+  String get ghibliResultTitle => 'Ghibli Style Result';
+
+  @override
+  String get ghibliResultSaveHint => 'Press and hold the artwork to save or share.';
+
+  @override
   String get aiToolbox => 'AI Toolbox';
 
   @override

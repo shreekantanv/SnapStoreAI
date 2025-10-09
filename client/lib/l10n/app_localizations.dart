@@ -382,6 +382,54 @@ abstract class AppLocalizations {
   /// **'Running with your {provider} API key ending in {suffix}.'**
   String toolApiKeyInUse(String provider, String suffix);
 
+  /// No description provided for @toolImageRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload a photo to continue.'**
+  String get toolImageRequired;
+
+  /// No description provided for @imagePickerUploadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photo'**
+  String get imagePickerUploadButton;
+
+  /// No description provided for @imagePickerReplaceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace photo'**
+  String get imagePickerReplaceButton;
+
+  /// No description provided for @imagePickerRemoveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get imagePickerRemoveButton;
+
+  /// No description provided for @ghibliProviderUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This tool currently works with a ChatGPT-compatible API key.'**
+  String get ghibliProviderUnsupported;
+
+  /// No description provided for @ghibliRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn't generate your artwork. {error}'**
+  String ghibliRunFailed(String error);
+
+  /// No description provided for @ghibliResultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Ghibli Style Result'**
+  String get ghibliResultTitle;
+
+  /// No description provided for @ghibliResultSaveHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Press and hold the artwork to save or share.'**
+  String get ghibliResultSaveHint;
+
   /// No description provided for @aiToolbox.
   ///
   /// In en, this message translates to:

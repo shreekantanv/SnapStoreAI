@@ -103,5 +103,20 @@
         "type": "String"
       }
     }
-  }
+  },
+  "toolImageRequired": "Please upload a photo to continue.",
+  "imagePickerUploadButton": "Upload photo",
+  "imagePickerReplaceButton": "Replace photo",
+  "imagePickerRemoveButton": "Remove photo",
+  "ghibliProviderUnsupported": "This tool currently works with a ChatGPT-compatible API key.",
+  "ghibliRunFailed": "We couldn't generate your artwork. {error}",
+  "@ghibliRunFailed": {
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  },
+  "ghibliResultTitle": "Ghibli Style Result",
+  "ghibliResultSaveHint": "Press and hold the artwork to save or share."
 }
