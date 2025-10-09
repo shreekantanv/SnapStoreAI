@@ -145,7 +145,7 @@ abstract class AppLocalizations {
   /// No description provided for @homeHeroGeneric.
   ///
   /// In en, this message translates to:
-  /// **'Welcome back'**
+  /// **'Welcome to SnapStoreAI'**
   String get homeHeroGeneric;
 
   /// No description provided for @homeHeroTitle.
@@ -292,30 +292,6 @@ abstract class AppLocalizations {
   /// **'Premium Controls'**
   String get settingsPremiumControlsTitle;
 
-  /// No description provided for @settingsGeminiLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Gemini API Key'**
-  String get settingsGeminiLabel;
-
-  /// No description provided for @settingsGeminiHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your Gemini API key'**
-  String get settingsGeminiHint;
-
-  /// No description provided for @settingsChatgptLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'ChatGPT API Key'**
-  String get settingsChatgptLabel;
-
-  /// No description provided for @settingsChatgptHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your ChatGPT API key'**
-  String get settingsChatgptHint;
-
   /// No description provided for @settingsGrokLabel.
   ///
   /// In en, this message translates to:
@@ -339,96 +315,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settings;
-
-  /// No description provided for @toolProviderLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'AI Provider'**
-  String get toolProviderLabel;
-
-  /// No description provided for @toolProviderStatusMissing.
-  ///
-  /// In en, this message translates to:
-  /// **'API key not configured'**
-  String get toolProviderStatusMissing;
-
-  /// No description provided for @toolProviderStatusReady.
-  ///
-  /// In en, this message translates to:
-  /// **'API key saved'**
-  String get toolProviderStatusReady;
-
-  /// No description provided for @toolRunButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Run Tool'**
-  String get toolRunButton;
-
-  /// No description provided for @toolMissingProvider.
-  ///
-  /// In en, this message translates to:
-  /// **'This tool doesn't specify an AI provider yet.'**
-  String get toolMissingProvider;
-
-  /// No description provided for @toolMissingApiKey.
-  ///
-  /// In en, this message translates to:
-  /// **'Add your {provider} API key in Settings to run this tool.'**
-  String toolMissingApiKey(String provider);
-
-  /// No description provided for @toolApiKeyInUse.
-  ///
-  /// In en, this message translates to:
-  /// **'Running with your {provider} API key ending in {suffix}.'**
-  String toolApiKeyInUse(String provider, String suffix);
-
-  /// No description provided for @toolImageRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Please upload a photo to continue.'**
-  String get toolImageRequired;
-
-  /// No description provided for @imagePickerUploadButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Upload photo'**
-  String get imagePickerUploadButton;
-
-  /// No description provided for @imagePickerReplaceButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Replace photo'**
-  String get imagePickerReplaceButton;
-
-  /// No description provided for @imagePickerRemoveButton.
-  ///
-  /// In en, this message translates to:
-  /// **'Remove photo'**
-  String get imagePickerRemoveButton;
-
-  /// No description provided for @toolProviderUnsupported.
-  ///
-  /// In en, this message translates to:
-  /// **'This provider is not supported for this tool yet.'**
-  String get toolProviderUnsupported;
-
-  /// No description provided for @toolRunFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'We couldn't complete the tool run. {error}'**
-  String toolRunFailed(String error);
-
-  /// No description provided for @toolImageResultSummary.
-  ///
-  /// In en, this message translates to:
-  /// **'Here is your stylized artwork, ready to save or share.'**
-  String get toolImageResultSummary;
-
-  /// No description provided for @toolResultSingleImageRange.
-  ///
-  /// In en, this message translates to:
-  /// **'Single image'**
-  String get toolResultSingleImageRange;
 
   /// No description provided for @aiToolbox.
   ///
@@ -585,6 +471,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Suggested Next Steps'**
   String get suggestedNextSteps;
+
+  /// No description provided for @settingsGeminiLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemini API Key'**
+  String get settingsGeminiLabel;
+
+  /// No description provided for @settingsGeminiHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your Gemini API key'**
+  String get settingsGeminiHint;
+
+  /// No description provided for @settingsChatgptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ChatGPT API Key'**
+  String get settingsChatgptLabel;
+
+  /// No description provided for @settingsChatgptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your ChatGPT API key'**
+  String get settingsChatgptHint;
+
+  /// No description provided for @toolProviderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Provider'**
+  String get toolProviderLabel;
+
+  /// No description provided for @toolProviderStatusMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'API key not configured'**
+  String get toolProviderStatusMissing;
+
+  /// No description provided for @toolProviderStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'API key saved'**
+  String get toolProviderStatusReady;
+
+  /// No description provided for @toolRunButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Tool'**
+  String get toolRunButton;
+
+  /// No description provided for @toolMissingProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'This tool doesn\'t specify an AI provider yet.'**
+  String get toolMissingProvider;
+
+  /// No description provided for @toolMissingApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your {provider} API key in Settings to run this tool.'**
+  String toolMissingApiKey(String provider);
+
+  /// No description provided for @toolApiKeyInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Running with your {provider} API key ending in {suffix}.'**
+  String toolApiKeyInUse(String provider, String suffix);
+
+  /// No description provided for @toolImageRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Please upload a photo to continue.'**
+  String get toolImageRequired;
+
+  /// No description provided for @imagePickerUploadButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Upload photo'**
+  String get imagePickerUploadButton;
+
+  /// No description provided for @imagePickerReplaceButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Replace photo'**
+  String get imagePickerReplaceButton;
+
+  /// No description provided for @imagePickerRemoveButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove photo'**
+  String get imagePickerRemoveButton;
+
+  /// No description provided for @toolProviderUnsupported.
+  ///
+  /// In en, this message translates to:
+  /// **'This provider is not supported for this tool yet.'**
+  String get toolProviderUnsupported;
+
+  /// No description provided for @toolRunFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'We couldn\'t complete the tool run. {error}'**
+  String toolRunFailed(String error);
+
+  /// No description provided for @toolImageResultSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'Here is your stylized artwork, ready to save or share.'**
+  String get toolImageResultSummary;
+
+  /// No description provided for @toolResultSingleImageRange.
+  ///
+  /// In en, this message translates to:
+  /// **'Single image'**
+  String get toolResultSingleImageRange;
 }
 
 class _AppLocalizationsDelegate

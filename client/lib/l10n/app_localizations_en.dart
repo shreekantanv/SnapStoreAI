@@ -117,18 +117,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPremiumControlsTitle => 'Premium Controls';
 
   @override
-  String get settingsGeminiLabel => 'Gemini API Key';
-
-  @override
-  String get settingsGeminiHint => 'Enter your Gemini API key';
-
-  @override
-  String get settingsChatgptLabel => 'ChatGPT API Key';
-
-  @override
-  String get settingsChatgptHint => 'Enter your ChatGPT API key';
-
-  @override
   String get settingsGrokLabel => 'Grok API Key';
 
   @override
@@ -139,55 +127,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settings => 'Settings';
-
-  @override
-  String get toolProviderLabel => 'AI Provider';
-
-  @override
-  String get toolProviderStatusMissing => 'API key not configured';
-
-  @override
-  String get toolProviderStatusReady => 'API key saved';
-
-  @override
-  String get toolRunButton => 'Run Tool';
-
-  @override
-  String get toolMissingProvider => "This tool doesn't specify an AI provider yet.";
-
-  @override
-  String toolMissingApiKey(String provider) => 'Add your $provider API key in Settings to run this tool.';
-
-  @override
-  String toolApiKeyInUse(String provider, String suffix) =>
-      'Running with your $provider API key ending in $suffix.';
-
-  @override
-  String get toolImageRequired => 'Please upload a photo to continue.';
-
-  @override
-  String get imagePickerUploadButton => 'Upload photo';
-
-  @override
-  String get imagePickerReplaceButton => 'Replace photo';
-
-  @override
-  String get imagePickerRemoveButton => 'Remove photo';
-
-  @override
-  String get toolProviderUnsupported =>
-      'This provider is not supported for this tool yet.';
-
-  @override
-  String toolRunFailed(String error) =>
-      "We couldn't complete the tool run. $error";
-
-  @override
-  String get toolImageResultSummary =>
-      'Here is your stylized artwork, ready to save or share.';
-
-  @override
-  String get toolResultSingleImageRange => 'Single image';
 
   @override
   String get aiToolbox => 'AI Toolbox';
@@ -268,4 +207,70 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get suggestedNextSteps => 'Suggested Next Steps';
+
+  @override
+  String get settingsGeminiLabel => 'Gemini API Key';
+
+  @override
+  String get settingsGeminiHint => 'Enter your Gemini API key';
+
+  @override
+  String get settingsChatgptLabel => 'ChatGPT API Key';
+
+  @override
+  String get settingsChatgptHint => 'Enter your ChatGPT API key';
+
+  @override
+  String get toolProviderLabel => 'AI Provider';
+
+  @override
+  String get toolProviderStatusMissing => 'API key not configured';
+
+  @override
+  String get toolProviderStatusReady => 'API key saved';
+
+  @override
+  String get toolRunButton => 'Run Tool';
+
+  @override
+  String get toolMissingProvider =>
+      'This tool doesn\'t specify an AI provider yet.';
+
+  @override
+  String toolMissingApiKey(String provider) {
+    return 'Add your $provider API key in Settings to run this tool.';
+  }
+
+  @override
+  String toolApiKeyInUse(String provider, String suffix) {
+    return 'Running with your $provider API key ending in $suffix.';
+  }
+
+  @override
+  String get toolImageRequired => 'Please upload a photo to continue.';
+
+  @override
+  String get imagePickerUploadButton => 'Upload photo';
+
+  @override
+  String get imagePickerReplaceButton => 'Replace photo';
+
+  @override
+  String get imagePickerRemoveButton => 'Remove photo';
+
+  @override
+  String get toolProviderUnsupported =>
+      'This provider is not supported for this tool yet.';
+
+  @override
+  String toolRunFailed(String error) {
+    return 'We couldn\'t complete the tool run. $error';
+  }
+
+  @override
+  String get toolImageResultSummary =>
+      'Here is your stylized artwork, ready to save or share.';
+
+  @override
+  String get toolResultSingleImageRange => 'Single image';
 }
