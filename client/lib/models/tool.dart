@@ -69,8 +69,8 @@ class Tool {
       imageUrl: json['imageUrl'] as String,
       categories: _parseCategories(json),
       tags: (json['tags'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .where((element) => element.trim().isNotEmpty)
+              ?.map((e) => (e as String).trim())
+              .where((element) => element.isNotEmpty)
               .toList(growable: false) ??
           const [],
       prompt: json['prompt'] as String?,

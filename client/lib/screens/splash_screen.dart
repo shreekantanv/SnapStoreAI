@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import '../utils/onboarding_storage.dart';
+import 'home_screen.dart';
 import 'onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -15,11 +17,16 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // auto-advance after initialization
-    Timer(const Duration(seconds: 2), () {
-      Navigator.pushReplacementNamed(
-          context, OnboardingScreen.routeName);
-    });
+    _bootstrap();
+  }
+
+  Future<void> _bootstrap() async {
+    await Future.delayed(const Duration(seconds: 2));
+    final completed = await OnboardingStorage.isCompleted();
+    if (!mounted) return;
+    final nextRoute =
+        completed ? HomeScreen.routeName : OnboardingScreen.routeName;
+    Navigator.pushReplacementNamed(context, nextRoute);
   }
 
   @override

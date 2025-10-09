@@ -135,13 +135,18 @@ class _HomeScreenState extends State<HomeScreen> {
         .toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
+    final normalizedSelectedTags =
+        _selectedTags.map((tag) => tag.toLowerCase()).toSet();
+
     final filtered = allTools.where((t) {
       final q = _search.trim().toLowerCase();
       final matchesSearch =
           q.isEmpty || t.title.toLowerCase().contains(q) || t.subtitle.toLowerCase().contains(q);
       final matchesCategory =
           _selectedCategory == 'All' || t.categories.contains(_selectedCategory);
-      final matchesTags = _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
+      final toolTagSet = t.tags.map((tag) => tag.trim().toLowerCase()).toSet();
+      final matchesTags =
+          normalizedSelectedTags.isEmpty || normalizedSelectedTags.every(toolTagSet.contains);
       return matchesSearch && matchesCategory && matchesTags;
     }).toList();
 
@@ -427,7 +432,7 @@ class _HomeScreenState extends State<HomeScreen> {
           sliver: SliverLayoutBuilder(
             builder: (context, constraints) {
               final cols = _columnsForWidth(context);
-              const tileHeight = 240.0;
+              final tileHeight = _tileHeightFor(context);
               const gap = 14.0;
 
               return SliverGrid(
@@ -458,6 +463,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
     slivers.add(const SliverToBoxAdapter(child: SizedBox(height: 84)));
     return slivers;
+  }
+
+  double _tileHeightFor(BuildContext context) {
+    const baseHeight = 262.0;
+    final textScale = MediaQuery.of(context).textScaleFactor;
+    if (textScale <= 1.0) {
+      return baseHeight;
+    }
+    final clamped = (textScale - 1.0).clamp(0.0, 1.0);
+    return baseHeight + (clamped * 88);
   }
 
   List<Widget> _buildHistorySlivers(BuildContext context, List<Tool> allTools) {

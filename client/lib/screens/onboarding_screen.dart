@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../utils/onboarding_storage.dart';
 import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -41,9 +42,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  void _next() {
+  Future<void> _completeAndGoHome() async {
+    await OnboardingStorage.markCompleted();
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      HomeScreen.routeName,
+      (route) => false,
+    );
+  }
+
+  Future<void> _next() async {
     if (_currentPage == _slides.length - 1) {
-      Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+      await _completeAndGoHome();
     } else {
       _controller.nextPage(
         duration: const Duration(milliseconds: 320),
@@ -146,7 +156,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         height: 56,
                         width: double.infinity,
                         child: TextButton(
-                          onPressed: _next,
+                          onPressed: () => _next(),
                           style: ButtonStyle(
                             overlayColor: WidgetStateProperty.all(Colors.white10),
                             shape: WidgetStateProperty.all(
@@ -194,7 +204,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 right: 8,
                 top: 8,
                 child: TextButton(
-                  onPressed: () => Navigator.pushReplacementNamed(context, HomeScreen.routeName),
+                  onPressed: () => _completeAndGoHome(),
                   child: Text(
                     'Skip',
                     style: TextStyle(
