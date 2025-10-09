@@ -2,13 +2,13 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../models/analysis_result.dart';
 import '../../widgets/icon_list.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/tool.dart';
 import '../../providers/tool_provider.dart';
-import 'package:provider/provider.dart';
 import 'tool_entry_screen.dart';
 
 
@@ -954,48 +954,48 @@ class _SuggestedNextSteps extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final toolProvider = context.read<ToolProvider>();
+    final toolProvider = context.watch<ToolProvider>();
     final suggestedToolIds = tool.suggestedTools;
 
     if (suggestedToolIds.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    return StreamBuilder<List<Tool>>(
-      stream: toolProvider.getToolsByIds(suggestedToolIds),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const SizedBox.shrink();
-        }
+    if (!toolProvider.hasLoaded) {
+      toolProvider.ensureLoaded();
+      return const SizedBox.shrink();
+    }
 
-        final suggestedTools = snapshot.data!;
+    final suggestedTools = toolProvider.toolsByIds(suggestedToolIds);
 
-        final items = suggestedTools.map((tool) {
-          return PremiumListItem(
-            icon: Icons.auto_awesome, // Placeholder icon
-            title: tool.title,
-            subtitle: tool.subtitle,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ToolEntryScreen(tool: tool),
-                ),
-              );
-            },
-          );
-        }).toList();
+    if (suggestedTools.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
-        return _GlassCard(
-          child: PremiumIconList(
-            header: AppLocalizations.of(context)!.suggestedNextSteps,
-            items: items,
-            trailingBuilder: (ctx, it) => Icon(
-              Icons.chevron_right,
-              color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.35),
+    final items = suggestedTools.map((tool) {
+      return PremiumListItem(
+        icon: Icons.auto_awesome, // Placeholder icon
+        title: tool.title,
+        subtitle: tool.subtitle,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => ToolEntryScreen(tool: tool),
             ),
-          ),
-        );
-      },
+          );
+        },
+      );
+    }).toList();
+
+    return _GlassCard(
+      child: PremiumIconList(
+        header: AppLocalizations.of(context)!.suggestedNextSteps,
+        items: items,
+        trailingBuilder: (ctx, it) => Icon(
+          Icons.chevron_right,
+          color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.35),
+        ),
+      ),
     );
   }
 }
