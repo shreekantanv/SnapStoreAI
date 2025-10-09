@@ -68,107 +68,54 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
       );
       return;
     }
+    InputField? imageField;
+    ToolInputValue? imageValue;
 
-    final hasImageInput = widget.tool.inputFields.any((f) => f.type == 'image');
-    if (!hasImageInput) {
-      final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))),
-      );
-      return;
-    }
+    if (widget.tool.runtime == ToolRuntime.imageStylization) {
+      final hasImageInput = widget.tool.inputFields.any((f) => f.type == 'image');
+      if (!hasImageInput) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.toolProviderUnsupported)),
+        );
+        return;
+      }
 
-    final imageField = widget.tool.inputFields.firstWhere((f) => f.type == 'image');
-    final imageValue = _inputValues[imageField.id];
-    if (imageValue == null || !imageValue.hasBytes) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.toolImageRequired)),
-      );
-      return;
+      imageField = widget.tool.inputFields.firstWhere((f) => f.type == 'image');
+      imageValue = _inputValues[imageField.id];
+      if (imageValue == null || !imageValue.hasBytes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(l10n.toolImageRequired)),
+        );
+        return;
+      }
     }
 
     setState(() => _isLoading = true);
+    final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
+
     try {
-      final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))),
       );
 
-      final promptBuffer = StringBuffer();
-      final basePrompt = widget.tool.prompt?.trim();
-      if (basePrompt != null && basePrompt.isNotEmpty) {
-        promptBuffer.writeln(basePrompt);
-      } else {
-        promptBuffer.writeln(
-          'Turn this photo into a whimsical Studio Ghibli style illustration with rich colors and soft lighting.',
-        );
+      switch (widget.tool.runtime) {
+        case ToolRuntime.imageStylization:
+          await _executeImageStylization(
+            provider: provider,
+            apiKey: apiKey,
+            imageField: imageField!,
+            imageValue: imageValue!,
+            l10n: l10n,
+          );
+          break;
+        case ToolRuntime.storybookGenerator:
+          await _executeStorybookGeneration(
+            provider: provider,
+            apiKey: apiKey,
+            l10n: l10n,
+          );
+          break;
       }
-
-      final additionalInstructions = widget.tool.inputFields
-          .where((f) => f.type == 'text')
-          .map((f) => _inputValues[f.id]?.text)
-          .whereType<String>()
-          .map((value) => value.trim())
-          .where((value) => value.isNotEmpty)
-          .toList();
-
-      if (additionalInstructions.isNotEmpty) {
-        promptBuffer
-          ..writeln()
-          ..writeln('Additional instructions:')
-          ..writeln(additionalInstructions.join('\n'));
-      }
-
-      final generatedImage = await _generateStylizedImage(
-        provider: provider,
-        apiKey: apiKey,
-        imageBytes: imageValue.bytes!,
-        imageMimeType: imageValue.mimeType ?? 'image/png',
-        prompt: promptBuffer.toString(),
-      );
-
-      if (!mounted) return;
-
-      final analysisResult = AnalysisResult(
-        status: AnalysisStatus.success,
-        subjectImageBytes: generatedImage,
-        summary: l10n.toolImageResultSummary,
-        meta: Meta(
-          analyzedItemsCount: 1,
-          timeRange: l10n.toolResultSingleImageRange,
-          modelUsed: provider.displayName,
-        ),
-      );
-
-      final historyInputs =
-          _buildHistoryInputs(imageFieldId: imageField.id, imageValue: imageValue);
-      final outputs = <String, dynamic>{
-        'image': 'data:image/png;base64,${base64Encode(generatedImage)}',
-      };
-
-      final summary = analysisResult.summary;
-      if (summary != null && summary.isNotEmpty) {
-        outputs['summary'] = summary;
-      }
-
-      try {
-        await context.read<HistoryProvider>().recordActivity(
-              toolId: widget.tool.id,
-              inputs: historyInputs,
-              outputs: outputs,
-            );
-      } catch (_) {
-        // History persistence failures should not block the result experience.
-      }
-
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ResultsScreen(
-            result: analysisResult,
-            tool: widget.tool,
-          ),
-        ),
-      );
     } on UnsupportedError catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(l10n.toolProviderUnsupported)),
@@ -182,6 +129,182 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<void> _executeImageStylization({
+    required AiProvider provider,
+    required String apiKey,
+    required InputField imageField,
+    required ToolInputValue imageValue,
+    required AppLocalizations l10n,
+  }) async {
+    final promptBuffer = StringBuffer();
+    final basePrompt = widget.tool.prompt?.trim();
+    if (basePrompt != null && basePrompt.isNotEmpty) {
+      promptBuffer.writeln(basePrompt);
+    } else {
+      promptBuffer.writeln(
+        'Turn this photo into a whimsical Studio Ghibli style illustration with rich colors and soft lighting.',
+      );
+    }
+
+    final additionalInstructions = widget.tool.inputFields
+        .where((f) => f.type == 'text')
+        .map((f) => _inputValues[f.id]?.text)
+        .whereType<String>()
+        .map((value) => value.trim())
+        .where((value) => value.isNotEmpty)
+        .toList();
+
+    if (additionalInstructions.isNotEmpty) {
+      promptBuffer
+        ..writeln()
+        ..writeln('Additional instructions:')
+        ..writeln(additionalInstructions.join('\n'));
+    }
+
+    final generatedImage = await _generateStylizedImage(
+      provider: provider,
+      apiKey: apiKey,
+      imageBytes: imageValue.bytes!,
+      imageMimeType: imageValue.mimeType ?? 'image/png',
+      prompt: promptBuffer.toString(),
+    );
+
+    if (!mounted) return;
+
+    final analysisResult = AnalysisResult(
+      status: AnalysisStatus.success,
+      subjectImageBytes: generatedImage,
+      summary: l10n.toolImageResultSummary,
+      meta: Meta(
+        analyzedItemsCount: 1,
+        timeRange: l10n.toolResultSingleImageRange,
+        modelUsed: provider.displayName,
+      ),
+    );
+
+    final historyInputs =
+        _buildHistoryInputs(imageFieldId: imageField.id, imageValue: imageValue);
+    final outputs = <String, dynamic>{
+      'image': 'data:image/png;base64,${base64Encode(generatedImage)}',
+    };
+
+    final summary = analysisResult.summary;
+    if (summary != null && summary.isNotEmpty) {
+      outputs['summary'] = summary;
+    }
+
+    try {
+      await context.read<HistoryProvider>().recordActivity(
+            toolId: widget.tool.id,
+            inputs: historyInputs,
+            outputs: outputs,
+          );
+    } catch (_) {
+      // History persistence failures should not block the result experience.
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ResultsScreen(
+          result: analysisResult,
+          tool: widget.tool,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _executeStorybookGeneration({
+    required AiProvider provider,
+    required String apiKey,
+    required AppLocalizations l10n,
+  }) async {
+    if (provider != AiProvider.gemini) {
+      throw UnsupportedError('Provider not supported for this tool');
+    }
+
+    final prompt = _buildStoryPrompt();
+    final story = await _generateStorybook(
+      apiKey: apiKey,
+      prompt: prompt,
+    );
+
+    if (!mounted) return;
+
+    final trimmedStory = story.trim();
+    final analysisResult = AnalysisResult(
+      status: AnalysisStatus.success,
+      summary: trimmedStory.isEmpty ? null : trimmedStory,
+      meta: Meta(
+        analyzedItemsCount: 1,
+        timeRange: l10n.toolResultSingleImageRange,
+        modelUsed: provider.displayName,
+      ),
+    );
+
+    final historyInputs = _buildHistoryInputs();
+    final outputs = <String, dynamic>{};
+    if (trimmedStory.isNotEmpty) {
+      outputs['story'] = trimmedStory;
+    }
+
+    try {
+      await context.read<HistoryProvider>().recordActivity(
+            toolId: widget.tool.id,
+            inputs: historyInputs,
+            outputs: outputs,
+          );
+    } catch (_) {
+      // History persistence failures should not block the result experience.
+    }
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ResultsScreen(
+          result: analysisResult,
+          tool: widget.tool,
+        ),
+      ),
+    );
+  }
+
+  String _buildStoryPrompt() {
+    final buffer = StringBuffer();
+    final basePrompt = widget.tool.prompt?.trim();
+    final hasCustomPrompt = basePrompt != null && basePrompt.isNotEmpty;
+    if (hasCustomPrompt) {
+      buffer.writeln(basePrompt);
+    } else {
+      buffer.writeln(
+        'You are a world-class children\'s author. Write a vibrant, picture-book style story for young readers.',
+      );
+      buffer.writeln(
+        'Structure the response with a title, three short chapters, and a closing section titled "Story Moral".',
+      );
+      buffer.writeln(
+        'After each chapter, include a single-sentence illustration idea prefixed with "Illustration:".',
+      );
+    }
+
+    final textInputs = widget.tool.inputFields
+        .where((field) => field.type == 'text')
+        .map((field) {
+      final value = _inputValues[field.id]?.text?.trim();
+      if (value == null || value.isEmpty) {
+        return null;
+      }
+      return '${field.label}: $value';
+    }).whereType<String>().toList();
+
+    if (textInputs.isNotEmpty) {
+      buffer
+        ..writeln()
+        ..writeln('Story parameters:')
+        ..writeln(textInputs.join('\n'));
+    }
+
+    return buffer.toString();
   }
 
   Future<Uint8List> _generateStylizedImage({
@@ -203,6 +326,70 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
       case AiProvider.grok:
         throw UnsupportedError('Provider not supported for this tool');
     }
+  }
+
+  Future<String> _generateStorybook({
+    required String apiKey,
+    required String prompt,
+  }) async {
+    final uri = Uri.parse(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+    );
+
+    final response = await _httpClient.post(
+      uri.replace(queryParameters: {'key': apiKey}),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({
+        'contents': [
+          {
+            'parts': [
+              {'text': prompt},
+            ],
+          },
+        ],
+        'generationConfig': {
+          'temperature': 0.85,
+          'maxOutputTokens': 1024,
+        },
+      }),
+    );
+
+    if (response.statusCode >= 400) {
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+    }
+
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+
+    final promptFeedback = decoded['promptFeedback'];
+    if (promptFeedback is Map) {
+      final blockReason = (promptFeedback['blockReason'] as String?)?.trim();
+      if (blockReason != null && blockReason.isNotEmpty) {
+        throw Exception('Request blocked: $blockReason');
+      }
+    }
+
+    final candidates = decoded['candidates'] as List<dynamic>?;
+    if (candidates == null || candidates.isEmpty) {
+      throw Exception('No story content returned.');
+    }
+
+    for (final candidate in candidates) {
+      if (candidate is! Map) continue;
+      final content = candidate['content'];
+      if (content is! Map) continue;
+      final parts = content['parts'];
+      if (parts is! List) continue;
+
+      for (final part in parts) {
+        if (part is! Map) continue;
+        final text = (part['text'] as String?)?.trim();
+        if (text != null && text.isNotEmpty) {
+          return text;
+        }
+      }
+    }
+
+    throw Exception('Story content missing.');
   }
 
   Future<Uint8List> _runOpenAiEdit({
@@ -257,17 +444,27 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   }
 
   Map<String, dynamic> _buildHistoryInputs({
-    required String imageFieldId,
-    required ToolInputValue imageValue,
+    String? imageFieldId,
+    ToolInputValue? imageValue,
   }) {
     final inputs = <String, dynamic>{};
 
     for (final field in widget.tool.inputFields) {
       final value = _inputValues[field.id];
       if (field.type == 'text') {
-        inputs[field.label] = value?.text ?? '';
-      } else if (field.type == 'image' && field.id == imageFieldId) {
-        inputs[field.label] = imageValue.fileName ?? 'photo';
+        final textValue = value?.text?.trim();
+        if (textValue != null && textValue.isNotEmpty) {
+          inputs[field.label] = textValue;
+        }
+      } else if (field.type == 'image') {
+        if (imageFieldId != null &&
+            imageValue != null &&
+            field.id == imageFieldId &&
+            imageValue.hasBytes) {
+          inputs[field.label] = imageValue.fileName ?? 'photo';
+        } else if (value != null && value.hasBytes) {
+          inputs[field.label] = value.fileName ?? 'photo';
+        }
       }
     }
 

@@ -583,7 +583,7 @@ abstract class AppLocalizations {
   /// No description provided for @toolResultSingleImageRange.
   ///
   /// In en, this message translates to:
-  /// **'Single image'**
+  /// **'Single creative session'**
   String get toolResultSingleImageRange;
 }
 

@@ -272,5 +272,5 @@ class AppLocalizationsEn extends AppLocalizations {
       'Here is your stylized artwork, ready to save or share.';
 
   @override
-  String get toolResultSingleImageRange => 'Single image';
+  String get toolResultSingleImageRange => 'Single creative session';
 }
