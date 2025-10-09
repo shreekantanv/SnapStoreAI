@@ -33,6 +33,13 @@ class _HomeScreenState extends State<HomeScreen> {
   final Set<String> _selectedTags = <String>{};
   final _searchCtrl = TextEditingController();
 
+  Future<void> _handleRefresh() {
+    if (_currentNavIndex == 2) {
+      return context.read<HistoryProvider>().fetchHistory();
+    }
+    return context.read<ToolProvider>().refresh();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -254,17 +261,21 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ],
-            body: CustomScrollView(
-              slivers: _currentNavIndex == 2
-                  ? _buildHistorySlivers(context, allTools)
-                  : _buildToolSlivers(
-                context: context,
-                l10n: l10n,
-                categories: categories,
-                tags: tags,
-                displayTools: displayTools,
-                favoritesProvider: favoritesProvider,
-                showFavoritesOnly: showFavoritesOnly,
+            body: RefreshIndicator(
+              onRefresh: _handleRefresh,
+              child: CustomScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                slivers: _currentNavIndex == 2
+                    ? _buildHistorySlivers(context, allTools)
+                    : _buildToolSlivers(
+                  context: context,
+                  l10n: l10n,
+                  categories: categories,
+                  tags: tags,
+                  displayTools: displayTools,
+                  favoritesProvider: favoritesProvider,
+                  showFavoritesOnly: showFavoritesOnly,
+                ),
               ),
             ),
           ),
