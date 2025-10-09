@@ -42,8 +42,6 @@ dependencies:
   # Firebase core & Firestore
   firebase_core: ^2.15.0
   cloud_firestore: ^4.10.0
-  firebase_auth: ^4.6.0
-  google_sign_in: ^6.1.0
 
   # State management & routing
   provider: ^6.0.0

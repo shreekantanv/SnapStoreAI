@@ -1,5 +1,6 @@
 import 'feature_pill.dart';
 import 'how_it_works_step.dart';
+import 'ai_provider.dart';
 
 class InputField {
   final String id;
@@ -39,6 +40,7 @@ class Tool {
   final List<HowItWorksStep> howItWorks;
   final List<FeaturePill> featurePills;
   final List<String> suggestedTools;
+  final AiProvider? aiProvider;
 
   Tool({
     required this.id,
@@ -55,6 +57,7 @@ class Tool {
     this.howItWorks = const [],
     this.featurePills = const [],
     this.suggestedTools = const [],
+    this.aiProvider,
   });
 
   factory Tool.fromJson(Map<String, dynamic> json, String id) {
@@ -89,6 +92,7 @@ class Tool {
               ?.map((e) => e as String)
               .toList() ??
           [],
+      aiProvider: AiProviderInfo.fromId(json['aiProvider'] as String?),
     );
   }
 }

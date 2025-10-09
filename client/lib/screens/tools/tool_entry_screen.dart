@@ -1,7 +1,6 @@
-import 'dart:ui';
-import 'package:client/screens/tools/tool_result_screen.dart';
 import 'package:flutter/material.dart';
 
+import 'package:client/models/ai_provider.dart';
 import 'package:client/models/tool.dart';
 import 'package:client/utils/icon_mapper.dart';
 import 'package:client/widgets/dynamic_input_widget.dart';
@@ -10,8 +9,8 @@ import 'package:client/widgets/how_it_works_carousel.dart';
 
 import 'package:provider/provider.dart';
 
-import '../../models/analysis_result.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/api_key_provider.dart';
 import '../../providers/favorite_tools_provider.dart';
 
 class ToolEntryScreen extends StatefulWidget {
@@ -26,6 +25,40 @@ class ToolEntryScreen extends StatefulWidget {
 class _ToolEntryScreenState extends State<ToolEntryScreen> {
   final _inputValues = <String, String>{};
   bool _isLoading = false;
+
+  Future<void> _runTool() async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = widget.tool.aiProvider;
+
+    if (provider == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolMissingProvider)),
+      );
+      return;
+    }
+
+    final apiKeyProvider = context.read<ApiKeyProvider>();
+    final apiKey = apiKeyProvider.keyFor(provider);
+    if (apiKey == null || apiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolMissingApiKey(provider.displayName))),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))),
+      );
+      // TODO: Integrate actual tool execution using [apiKey] for [provider].
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +77,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
             tooltip: isFavorite
                 ? l10n.removeFromFavorites
                 : l10n.addToFavorites,
-            onPressed: () =>
-                favorites.toggleFavorite(widget.tool.id),
+            onPressed: () => favorites.toggleFavorite(widget.tool.id),
           ),
         ],
       ),
@@ -65,6 +97,40 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                     subtitle: widget.tool.subtitle,
                   ),
                   const SizedBox(height: 16),
+
+                  if (widget.tool.aiProvider != null) ...[
+                    _SectionCard(
+                      title: l10n.toolProviderLabel,
+                      child: Consumer<ApiKeyProvider>(
+                        builder: (context, apiKeys, _) {
+                          final provider = widget.tool.aiProvider!;
+                          final hasKey = (apiKeys.keyFor(provider) ?? '').isNotEmpty;
+                          final status = hasKey
+                              ? l10n.toolProviderStatusReady
+                              : l10n.toolProviderStatusMissing;
+                          final statusColor = hasKey
+                              ? cs.primary
+                              : Theme.of(context).colorScheme.error;
+                          return Row(
+                            children: [
+                              Icon(
+                                hasKey ? Icons.verified_user : Icons.warning_amber_outlined,
+                                color: statusColor,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '${provider.displayName} · $status',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   if (widget.tool.tags.isNotEmpty) ...[
                     _SectionCard(
@@ -149,7 +215,17 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
 
                   const SizedBox(height: 18),
 
-
+                  FilledButton.icon(
+                    onPressed: _isLoading ? null : _runTool,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.play_arrow_rounded),
+                    label: Text(_isLoading ? l10n.analysisInProgress : l10n.toolRunButton),
+                  ),
 
                   const SizedBox(height: 12),
 

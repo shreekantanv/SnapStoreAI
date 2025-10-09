@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/tool.dart';
 import '../models/tool_activity.dart';
-import '../providers/auth_provider.dart';
 import '../providers/favorite_tools_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/theme_provider.dart';
@@ -97,11 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
             .toList();
 
         final gradients = Theme.of(context).extension<PremiumGradients>();
-        final auth = context.watch<AuthProvider>();
-        final displayName = auth.user?.displayName?.trim();
-        final heroTitle = displayName != null && displayName.isNotEmpty
-            ? l10n.homeHeroTitle(displayName)
-            : l10n.homeHeroGeneric;
+        final heroTitle = l10n.homeHeroGeneric;
 
         return DecoratedBox(
           decoration: BoxDecoration(gradient: gradients?.scaffoldGradient),
@@ -188,9 +183,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 4),
                       IconButton(
-                        icon: const Icon(Icons.logout),
-                        tooltip: 'Sign out',
-                        onPressed: () => context.read<AuthProvider>().signOut(),
+                        icon: const Icon(Icons.settings),
+                        tooltip: l10n.settings,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                        ),
                       ),
                       const SizedBox(width: 8),
                     ],

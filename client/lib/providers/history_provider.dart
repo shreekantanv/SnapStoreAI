@@ -4,22 +4,17 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../models/tool_activity.dart';
-import 'auth_provider.dart';
 
 class HistoryProvider extends ChangeNotifier {
   HistoryProvider({FlutterSecureStorage? storage})
       : _storage = storage ?? const FlutterSecureStorage();
 
-  static const _storageKeyPrefix = 'tool_history_';
+  static const _storageKey = 'tool_history_global';
   static const int _maxEntries = 100;
 
   final FlutterSecureStorage _storage;
 
-  AuthProvider? _authProvider;
-  VoidCallback? _authListener;
-  bool _listeningToAuth = false;
-  String? _currentUid;
-  bool _hasLoadedForCurrentUser = false;
+  bool _hasLoaded = false;
 
   bool _isLoading = false;
   bool get isLoading => _isLoading;
@@ -30,54 +25,23 @@ class HistoryProvider extends ChangeNotifier {
   final List<ToolActivity> _activities = <ToolActivity>[];
   List<ToolActivity> get activities => List.unmodifiable(_activities);
 
-  void update(AuthProvider authProvider) {
-    final authChanged = !identical(_authProvider, authProvider);
-
-    if (_listeningToAuth && authChanged && _authProvider != null && _authListener != null) {
-      _authProvider!.removeListener(_authListener!);
-      _listeningToAuth = false;
-    }
-
-    _authProvider = authProvider;
-    _authListener ??= _handleAuthChanged;
-
-    if (!_listeningToAuth && _authListener != null) {
-      _authProvider!.addListener(_authListener!);
-      _listeningToAuth = true;
-    }
-
-    _handleAuthChanged();
-  }
-
   Future<void> fetchHistory() async {
-    final authProvider = _authProvider;
-    if (authProvider == null) {
-      _resetState();
-      return;
-    }
+    if (_isLoading) return;
 
-    final uid = authProvider.user?.uid;
-    if (uid == null) {
-      _currentUid = null;
-      _resetState();
-      return;
-    }
-
-    _currentUid = uid;
     _isLoading = true;
     _error = null;
     notifyListeners();
 
     try {
-      final items = await _readActivities(uid);
+      final items = await _readActivities();
       _activities
         ..clear()
         ..addAll(items);
-      _hasLoadedForCurrentUser = true;
+      _hasLoaded = true;
     } catch (e) {
       _error = e.toString();
       _activities.clear();
-      _hasLoadedForCurrentUser = false;
+      _hasLoaded = false;
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -89,14 +53,9 @@ class HistoryProvider extends ChangeNotifier {
     required Map<String, dynamic> inputs,
     required Map<String, dynamic> outputs,
   }) async {
-    final uid = _authProvider?.user?.uid;
-    if (uid == null) {
-      return;
-    }
-
-    if (_currentUid != uid || !_hasLoadedForCurrentUser) {
+    if (!_hasLoaded) {
       try {
-        final existing = await _readActivities(uid);
+        final existing = await _readActivities();
         _activities
           ..clear()
           ..addAll(existing);
@@ -104,8 +63,7 @@ class HistoryProvider extends ChangeNotifier {
         _error = e.toString();
         _activities.clear();
       }
-      _currentUid = uid;
-      _hasLoadedForCurrentUser = true;
+      _hasLoaded = true;
     }
 
     final now = DateTime.now().toUtc();
@@ -126,7 +84,7 @@ class HistoryProvider extends ChangeNotifier {
 
     try {
       await _storage.write(
-        key: _storageKeyFor(uid),
+        key: _storageKey,
         value: jsonEncode(_activities.map((a) => a.toJson()).toList()),
       );
       _error = null;
@@ -137,8 +95,8 @@ class HistoryProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<List<ToolActivity>> _readActivities(String uid) async {
-    final raw = await _storage.read(key: _storageKeyFor(uid));
+  Future<List<ToolActivity>> _readActivities() async {
+    final raw = await _storage.read(key: _storageKey);
     if (raw == null || raw.isEmpty) {
       return <ToolActivity>[];
     }
@@ -173,43 +131,5 @@ class HistoryProvider extends ChangeNotifier {
     });
 
     return items;
-  }
-
-  void _handleAuthChanged() {
-    final uid = _authProvider?.user?.uid;
-    if (uid == null) {
-      _currentUid = null;
-      _resetState();
-      return;
-    }
-
-    if (_currentUid == uid && _hasLoadedForCurrentUser) {
-      return;
-    }
-
-    _currentUid = uid;
-    _hasLoadedForCurrentUser = false;
-    fetchHistory();
-  }
-
-  void _resetState() {
-    _activities.clear();
-    _isLoading = false;
-    _error = null;
-    _hasLoadedForCurrentUser = false;
-    notifyListeners();
-  }
-
-  String _storageKeyFor(String uid) => '$_storageKeyPrefix$uid';
-
-  @override
-  void dispose() {
-    if (_authListener != null && _authProvider != null && _listeningToAuth) {
-      _authProvider!.removeListener(_authListener!);
-    }
-    _authListener = null;
-    _listeningToAuth = false;
-    _authProvider = null;
-    super.dispose();
   }
 }

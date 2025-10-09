@@ -1,13 +1,13 @@
 {
-    "signIn": "Sign In",
-    "signInWithGoogle": "Sign in with Google",
-    "continueAsGuest": "Continue as Guest",
-    "toolStore": "Tool Store",
-    "searchForTools": "Search for tools",
-    "all": "All",
-    "tools": "Tools",
+  "signIn": "Sign In",
+  "signInWithGoogle": "Sign in with Google",
+  "continueAsGuest": "Continue as Guest",
+  "toolStore": "Tool Store",
+  "searchForTools": "Search for tools",
+  "all": "All",
+  "tools": "Tools",
   "favorites": "Favorites",
-  "homeHeroGeneric": "Welcome back",
+  "homeHeroGeneric": "Welcome to SnapStoreAI",
   "homeHeroTitle": "Welcome back, {name}",
   "@homeHeroTitle": {
     "placeholders": {
@@ -48,32 +48,60 @@
   "settingsPremiumControlsTitle": "Premium Controls",
   "settingsGrokLabel": "Grok API Key",
   "settingsGrokHint": "Enter your Grok API key",
-  "settingsSaveApiKey": "Save API Key",
-    "settings": "Settings",
-    "aiToolbox": "AI Toolbox",
-    "politicalLeaningAnalyzer": "Political Leaning Analyzer",
-    "analyzeYourXPosts": "Analyze X posts",
-    "weAnalyzeLocally": "We analyze locally/securely and do not store your data.",
-    "socialMediaHandle": "Social Media Handle (e.g., @username)",
-    "analyze2Credits": "Analyze (2 Credits)",
-    "analysisInProgress": "Analysis in Progress",
-    "analyzingYourSocialMedia": "Analyzing your social media activity",
-    "thisMayTakeAMoment": "This may take a moment. Your data remains private and is not stored.",
-    "reviewingPosts": "Reviewing posts...",
-    "cancel": "Cancel",
-    "analysisResults": "Analysis Results",
-    "politicalSpectrum": "Political Spectrum",
-    "left": "Left",
-    "center": "Center",
-    "right": "Right",
-    "keywordClouds": "Keyword Clouds",
-    "summary": "Summary",
-    "sharingNotImplemented": "Sharing not implemented in demo.",
-    "shareResult": "Share Result",
-    "analyzeAgain": "Analyze Again",
-    "seeTopicBreakdown": "See Topic Breakdown",
-    "topics": "Topics",
-    "progressive": "Progressive",
-    "conservative": "Conservative",
-    "suggestedNextSteps": "Suggested Next Steps"
+  "settingsSaveApiKey": "Save API Keys",
+  "settings": "Settings",
+  "aiToolbox": "AI Toolbox",
+  "politicalLeaningAnalyzer": "Political Leaning Analyzer",
+  "analyzeYourXPosts": "Analyze X posts",
+  "weAnalyzeLocally": "We analyze locally/securely and do not store your data.",
+  "socialMediaHandle": "Social Media Handle (e.g., @username)",
+  "analyze2Credits": "Analyze (2 Credits)",
+  "analysisInProgress": "Analysis in Progress",
+  "analyzingYourSocialMedia": "Analyzing your social media activity",
+  "thisMayTakeAMoment": "This may take a moment. Your data remains private and is not stored.",
+  "reviewingPosts": "Reviewing posts...",
+  "cancel": "Cancel",
+  "analysisResults": "Analysis Results",
+  "politicalSpectrum": "Political Spectrum",
+  "left": "Left",
+  "center": "Center",
+  "right": "Right",
+  "keywordClouds": "Keyword Clouds",
+  "summary": "Summary",
+  "sharingNotImplemented": "Sharing not implemented in demo.",
+  "shareResult": "Share Result",
+  "analyzeAgain": "Analyze Again",
+  "seeTopicBreakdown": "See Topic Breakdown",
+  "topics": "Topics",
+  "progressive": "Progressive",
+  "conservative": "Conservative",
+  "suggestedNextSteps": "Suggested Next Steps",
+  "settingsGeminiLabel": "Gemini API Key",
+  "settingsGeminiHint": "Enter your Gemini API key",
+  "settingsChatgptLabel": "ChatGPT API Key",
+  "settingsChatgptHint": "Enter your ChatGPT API key",
+  "toolProviderLabel": "AI Provider",
+  "toolProviderStatusMissing": "API key not configured",
+  "toolProviderStatusReady": "API key saved",
+  "toolRunButton": "Run Tool",
+  "toolMissingProvider": "This tool doesn't specify an AI provider yet.",
+  "toolMissingApiKey": "Add your {provider} API key in Settings to run this tool.",
+  "@toolMissingApiKey": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      }
+    }
+  },
+  "toolApiKeyInUse": "Running with your {provider} API key ending in {suffix}.",
+  "@toolApiKeyInUse": {
+    "placeholders": {
+      "provider": {
+        "type": "String"
+      },
+      "suffix": {
+        "type": "String"
+      }
+    }
+  }
 }

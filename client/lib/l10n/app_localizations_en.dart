@@ -33,7 +33,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get favorites => 'Favorites';
 
   @override
-  String get homeHeroGeneric => 'Welcome back';
+  String get homeHeroGeneric => 'Welcome to SnapStoreAI';
 
   @override
   String homeHeroTitle(String name) {
@@ -117,16 +117,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPremiumControlsTitle => 'Premium Controls';
 
   @override
+  String get settingsGeminiLabel => 'Gemini API Key';
+
+  @override
+  String get settingsGeminiHint => 'Enter your Gemini API key';
+
+  @override
+  String get settingsChatgptLabel => 'ChatGPT API Key';
+
+  @override
+  String get settingsChatgptHint => 'Enter your ChatGPT API key';
+
+  @override
   String get settingsGrokLabel => 'Grok API Key';
 
   @override
   String get settingsGrokHint => 'Enter your Grok API key';
 
   @override
-  String get settingsSaveApiKey => 'Save API Key';
+  String get settingsSaveApiKey => 'Save API Keys';
 
   @override
   String get settings => 'Settings';
+
+  @override
+  String get toolProviderLabel => 'AI Provider';
+
+  @override
+  String get toolProviderStatusMissing => 'API key not configured';
+
+  @override
+  String get toolProviderStatusReady => 'API key saved';
+
+  @override
+  String get toolRunButton => 'Run Tool';
+
+  @override
+  String get toolMissingProvider => "This tool doesn't specify an AI provider yet.";
+
+  @override
+  String toolMissingApiKey(String provider) => 'Add your $provider API key in Settings to run this tool.';
+
+  @override
+  String toolApiKeyInUse(String provider, String suffix) =>
+      'Running with your $provider API key ending in $suffix.';
 
   @override
   String get aiToolbox => 'AI Toolbox';

@@ -292,6 +292,30 @@ abstract class AppLocalizations {
   /// **'Premium Controls'**
   String get settingsPremiumControlsTitle;
 
+  /// No description provided for @settingsGeminiLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Gemini API Key'**
+  String get settingsGeminiLabel;
+
+  /// No description provided for @settingsGeminiHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your Gemini API key'**
+  String get settingsGeminiHint;
+
+  /// No description provided for @settingsChatgptLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'ChatGPT API Key'**
+  String get settingsChatgptLabel;
+
+  /// No description provided for @settingsChatgptHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your ChatGPT API key'**
+  String get settingsChatgptHint;
+
   /// No description provided for @settingsGrokLabel.
   ///
   /// In en, this message translates to:
@@ -307,7 +331,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsSaveApiKey.
   ///
   /// In en, this message translates to:
-  /// **'Save API Key'**
+  /// **'Save API Keys'**
   String get settingsSaveApiKey;
 
   /// No description provided for @settings.
@@ -315,6 +339,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settings;
+
+  /// No description provided for @toolProviderLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Provider'**
+  String get toolProviderLabel;
+
+  /// No description provided for @toolProviderStatusMissing.
+  ///
+  /// In en, this message translates to:
+  /// **'API key not configured'**
+  String get toolProviderStatusMissing;
+
+  /// No description provided for @toolProviderStatusReady.
+  ///
+  /// In en, this message translates to:
+  /// **'API key saved'**
+  String get toolProviderStatusReady;
+
+  /// No description provided for @toolRunButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Run Tool'**
+  String get toolRunButton;
+
+  /// No description provided for @toolMissingProvider.
+  ///
+  /// In en, this message translates to:
+  /// **'This tool doesn't specify an AI provider yet.'**
+  String get toolMissingProvider;
+
+  /// No description provided for @toolMissingApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'Add your {provider} API key in Settings to run this tool.'**
+  String toolMissingApiKey(String provider);
+
+  /// No description provided for @toolApiKeyInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Running with your {provider} API key ending in {suffix}.'**
+  String toolApiKeyInUse(String provider, String suffix);
 
   /// No description provided for @aiToolbox.
   ///
