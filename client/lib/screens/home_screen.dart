@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/tool.dart';
 import '../models/tool_activity.dart';
-import '../providers/auth_provider.dart';
 import '../providers/favorite_tools_provider.dart';
 import '../providers/history_provider.dart';
 import '../providers/theme_provider.dart';
@@ -34,6 +33,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final _searchCtrl = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<ToolProvider>().ensureLoaded();
+    });
+  }
+
+  @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
@@ -55,60 +62,99 @@ class _HomeScreenState extends State<HomeScreen> {
     final l10n = AppLocalizations.of(context)!;
     final cs = Theme.of(context).colorScheme;
 
-    return StreamBuilder<List<Tool>>(
-      stream: prov.tools,
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
-        }
-        if (snapshot.hasError) {
-          return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
-        }
-        final allTools = snapshot.data ?? [];
-        final categorySet = <String>{...allTools.map((t) => t.category)}
-          ..removeWhere((element) => element.trim().isEmpty);
-        final categories = ['All', ...categorySet.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
-        final tags = allTools
-            .expand((t) => t.tags)
-            .map((e) => e.trim())
-            .where((tag) => tag.isNotEmpty)
-            .toSet()
-            .toList()
-          ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    if (prov.error != null && !prov.hasLoaded) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.cloud_off, size: 48),
+                const SizedBox(height: 16),
+                Text(
+                  'Unable to load tools',
+                  style: Theme.of(context).textTheme.titleMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'We couldn\'t load the tool catalog right now.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: cs.onSurface.withOpacity(0.7)),
+                  textAlign: TextAlign.center,
+                ),
+                if (prov.error != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    prov.error.toString(),
+                    style: Theme.of(context)
+                        .textTheme
+                        .bodySmall
+                        ?.copyWith(color: cs.onSurface.withOpacity(0.5)),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () => context.read<ToolProvider>().refresh(),
+                  child: Text(l10n.retry),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
-        final filtered = allTools.where((t) {
-          final q = _search.trim().toLowerCase();
-          final matchesSearch = q.isEmpty ||
-              t.title.toLowerCase().contains(q) ||
-              t.subtitle.toLowerCase().contains(q);
-          final matchesCategory =
-              _selectedCategory == 'All' || t.category == _selectedCategory;
-          final matchesTags =
-              _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
-          return matchesSearch && matchesCategory && matchesTags;
-        }).toList();
+    if (!prov.hasLoaded) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
-        final showFavoritesOnly = _currentNavIndex == 1;
-        final displayTools = filtered
-            .where(
-              (tool) =>
-                  !showFavoritesOnly || favoritesProvider.isFavorite(tool.id),
-            )
-            .toList();
+    final allTools = prov.tools;
+    final categorySet = <String>{
+      ...allTools.expand((t) => t.categories),
+    }
+      ..removeWhere((element) => element.trim().isEmpty);
+    final categories = ['All', ...categorySet.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
+    final tags = allTools
+        .expand((t) => t.tags)
+        .map((e) => e.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toSet()
+        .toList()
+      ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
 
-        final gradients = Theme.of(context).extension<PremiumGradients>();
-        final auth = context.watch<AuthProvider>();
-        final displayName = auth.user?.displayName?.trim();
-        final heroTitle = displayName != null && displayName.isNotEmpty
-            ? l10n.homeHeroTitle(displayName)
-            : l10n.homeHeroGeneric;
+    final filtered = allTools.where((t) {
+      final q = _search.trim().toLowerCase();
+      final matchesSearch =
+          q.isEmpty || t.title.toLowerCase().contains(q) || t.subtitle.toLowerCase().contains(q);
+      final matchesCategory =
+          _selectedCategory == 'All' || t.categories.contains(_selectedCategory);
+      final matchesTags = _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
+      return matchesSearch && matchesCategory && matchesTags;
+    }).toList();
 
-        return DecoratedBox(
-          decoration: BoxDecoration(gradient: gradients?.scaffoldGradient),
-          child: Scaffold(
-            backgroundColor: Colors.transparent,
-            extendBody: true,
-            bottomNavigationBar: Padding(
+    final showFavoritesOnly = _currentNavIndex == 1;
+    final displayTools = filtered
+        .where(
+          (tool) => !showFavoritesOnly || favoritesProvider.isFavorite(tool.id),
+        )
+        .toList();
+
+    final gradients = Theme.of(context).extension<PremiumGradients>();
+    final heroTitle = l10n.homeHeroGeneric;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(gradient: gradients?.scaffoldGradient),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        bottomNavigationBar: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(26),
@@ -188,9 +234,11 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 4),
                       IconButton(
-                        icon: const Icon(Icons.logout),
-                        tooltip: 'Sign out',
-                        onPressed: () => context.read<AuthProvider>().signOut(),
+                        icon: const Icon(Icons.settings),
+                        tooltip: l10n.settings,
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                        ),
                       ),
                       const SizedBox(width: 8),
                     ],
@@ -387,7 +435,13 @@ class _HomeScreenState extends State<HomeScreen> {
           sliver: SliverLayoutBuilder(
             builder: (context, constraints) {
               final cols = _columnsForWidth(context);
-              const tileHeight = 240.0;
+              const baseTileHeight = 252.0;
+              const tagHeight = 48.0;
+              final needsTagSpace =
+                  displayTools.any((tool) => tool.tags.isNotEmpty);
+              final tileHeight = needsTagSpace
+                  ? baseTileHeight + tagHeight
+                  : baseTileHeight;
               const gap = 14.0;
 
               return SliverGrid(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'auth_screen.dart';
+
+import 'home_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   static const routeName = '/onboarding';
@@ -17,19 +18,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     {
       'title': 'Welcome to SnapStoreAI',
       'subtitle':
-      'Discover a world of AI-powered tools to simplify your life and boost your productivity.',
+          'Discover a world of AI-powered tools to simplify your life and boost your productivity.',
       'image': 'assets/images/logo.png',
     },
     {
       'title': 'Explore AI Tools',
       'subtitle':
-      'Browse a curated collection of AI tools, from trip planners to resume optimizers.',
+          'Browse a curated collection of AI tools, from trip planners to resume optimizers.',
       'image': 'assets/images/explore.png',
     },
     {
       'title': 'Get Started',
       'subtitle':
-      'Purchase credits and start using AI tools to enhance your daily tasks and projects.',
+          'Purchase credits and start using AI tools to enhance your daily tasks and projects.',
       'image': 'assets/images/get_started.png',
     },
   ];
@@ -42,7 +43,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   void _next() {
     if (_currentPage == _slides.length - 1) {
-      Navigator.pushReplacementNamed(context, AuthScreen.routeName);
+      Navigator.pushReplacementNamed(context, HomeScreen.routeName);
     } else {
       _controller.nextPage(
         duration: const Duration(milliseconds: 320),
@@ -54,16 +55,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     final headline = Theme.of(context).textTheme.headlineSmall?.copyWith(
-      fontSize: 26,
-      fontWeight: FontWeight.w700,
-      letterSpacing: .2,
-      color: Colors.white,
-    );
+          fontSize: 26,
+          fontWeight: FontWeight.w700,
+          letterSpacing: .2,
+          color: Colors.white,
+        );
     final body = Theme.of(context).textTheme.bodyMedium?.copyWith(
-      fontSize: 16,
-      height: 1.5,
-      color: Colors.white.withOpacity(.85),
-    );
+          fontSize: 16,
+          height: 1.5,
+          color: Colors.white.withOpacity(.85),
+        );
 
     return Scaffold(
       // Soft dark gradient like the mock
@@ -193,8 +194,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 right: 8,
                 top: 8,
                 child: TextButton(
-                  onPressed: () =>
-                      Navigator.pushReplacementNamed(context, AuthScreen.routeName),
+                  onPressed: () => Navigator.pushReplacementNamed(context, HomeScreen.routeName),
                   child: Text(
                     'Skip',
                     style: TextStyle(

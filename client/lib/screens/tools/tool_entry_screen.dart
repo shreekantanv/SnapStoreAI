@@ -1,18 +1,26 @@
-import 'dart:ui';
-import 'package:client/screens/tools/tool_result_screen.dart';
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
+import 'package:client/models/ai_provider.dart';
+import 'package:client/models/analysis_result.dart';
 import 'package:client/models/tool.dart';
+import 'package:client/models/tool_input_value.dart';
+import 'package:client/screens/tools/tool_result_screen.dart';
 import 'package:client/utils/icon_mapper.dart';
 import 'package:client/widgets/dynamic_input_widget.dart';
 import 'package:client/widgets/feature_pill_widget.dart';
 import 'package:client/widgets/how_it_works_carousel.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'package:provider/provider.dart';
 
-import '../../models/analysis_result.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/api_key_provider.dart';
 import '../../providers/favorite_tools_provider.dart';
+import '../../providers/history_provider.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -24,8 +32,246 @@ class ToolEntryScreen extends StatefulWidget {
 }
 
 class _ToolEntryScreenState extends State<ToolEntryScreen> {
-  final _inputValues = <String, String>{};
+  final _inputValues = <String, ToolInputValue>{};
+  late final http.Client _httpClient;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _httpClient = http.Client();
+  }
+
+  @override
+  void dispose() {
+    _httpClient.close();
+    super.dispose();
+  }
+
+  Future<void> _runTool() async {
+    final l10n = AppLocalizations.of(context)!;
+    final provider = widget.tool.aiProvider;
+
+    if (provider == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolMissingProvider)),
+      );
+      return;
+    }
+
+    final apiKeyProvider = context.read<ApiKeyProvider>();
+    final apiKey = apiKeyProvider.keyFor(provider);
+    if (apiKey == null || apiKey.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolMissingApiKey(provider.displayName))),
+      );
+      return;
+    }
+
+    final hasImageInput = widget.tool.inputFields.any((f) => f.type == 'image');
+    if (!hasImageInput) {
+      final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))),
+      );
+      return;
+    }
+
+    final imageField = widget.tool.inputFields.firstWhere((f) => f.type == 'image');
+    final imageValue = _inputValues[imageField.id];
+    if (imageValue == null || !imageValue.hasBytes) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolImageRequired)),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))),
+      );
+
+      final promptBuffer = StringBuffer();
+      final basePrompt = widget.tool.prompt?.trim();
+      if (basePrompt != null && basePrompt.isNotEmpty) {
+        promptBuffer.writeln(basePrompt);
+      } else {
+        promptBuffer.writeln(
+          'Turn this photo into a whimsical Studio Ghibli style illustration with rich colors and soft lighting.',
+        );
+      }
+
+      final additionalInstructions = widget.tool.inputFields
+          .where((f) => f.type == 'text')
+          .map((f) => _inputValues[f.id]?.text)
+          .whereType<String>()
+          .map((value) => value.trim())
+          .where((value) => value.isNotEmpty)
+          .toList();
+
+      if (additionalInstructions.isNotEmpty) {
+        promptBuffer
+          ..writeln()
+          ..writeln('Additional instructions:')
+          ..writeln(additionalInstructions.join('\n'));
+      }
+
+      final generatedImage = await _generateStylizedImage(
+        provider: provider,
+        apiKey: apiKey,
+        imageBytes: imageValue.bytes!,
+        imageMimeType: imageValue.mimeType ?? 'image/png',
+        prompt: promptBuffer.toString(),
+      );
+
+      if (!mounted) return;
+
+      final analysisResult = AnalysisResult(
+        status: AnalysisStatus.success,
+        subjectImageBytes: generatedImage,
+        summary: l10n.toolImageResultSummary,
+        meta: Meta(
+          analyzedItemsCount: 1,
+          timeRange: l10n.toolResultSingleImageRange,
+          modelUsed: provider.displayName,
+        ),
+      );
+
+      final historyInputs =
+          _buildHistoryInputs(imageFieldId: imageField.id, imageValue: imageValue);
+      final outputs = <String, dynamic>{
+        'image': 'data:image/png;base64,${base64Encode(generatedImage)}',
+      };
+
+      final summary = analysisResult.summary;
+      if (summary != null && summary.isNotEmpty) {
+        outputs['summary'] = summary;
+      }
+
+      try {
+        await context.read<HistoryProvider>().recordActivity(
+              toolId: widget.tool.id,
+              inputs: historyInputs,
+              outputs: outputs,
+            );
+      } catch (_) {
+        // History persistence failures should not block the result experience.
+      }
+
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ResultsScreen(
+            result: analysisResult,
+            tool: widget.tool,
+          ),
+        ),
+      );
+    } on UnsupportedError catch (_) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolProviderUnsupported)),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolRunFailed(e.toString()))),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<Uint8List> _generateStylizedImage({
+    required AiProvider provider,
+    required String apiKey,
+    required Uint8List imageBytes,
+    required String imageMimeType,
+    required String prompt,
+  }) async {
+    switch (provider) {
+      case AiProvider.chatgpt:
+        return _runOpenAiEdit(
+          apiKey: apiKey,
+          imageBytes: imageBytes,
+          imageMimeType: imageMimeType,
+          prompt: prompt,
+        );
+      case AiProvider.gemini:
+      case AiProvider.grok:
+        throw UnsupportedError('Provider not supported for this tool');
+    }
+  }
+
+  Future<Uint8List> _runOpenAiEdit({
+    required String apiKey,
+    required Uint8List imageBytes,
+    required String imageMimeType,
+    required String prompt,
+  }) async {
+    final uri = Uri.parse('https://api.openai.com/v1/images/edits');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $apiKey'
+      ..headers['Accept'] = 'application/json'
+      ..fields['prompt'] = prompt
+      ..fields['size'] = '1024x1024'
+      ..fields['n'] = '1'
+      ..fields['response_format'] = 'b64_json'
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          imageBytes,
+          filename: 'upload.${_extensionFromMime(imageMimeType)}',
+          contentType: MediaType.parse(imageMimeType),
+        ),
+      );
+
+    final streamed = await _httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode >= 400) {
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+    }
+
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    final data = decoded['data'] as List<dynamic>?;
+    if (data == null || data.isEmpty) {
+      throw Exception('No image data returned.');
+    }
+
+    final first = data.first as Map<String, dynamic>;
+    final base64Image = first['b64_json'] as String?;
+    if (base64Image == null) {
+      throw Exception('Image payload missing.');
+    }
+
+    return base64Decode(base64Image);
+  }
+
+  String _extensionFromMime(String mime) {
+    final lower = mime.toLowerCase();
+    if (lower.endsWith('png')) return 'png';
+    if (lower.endsWith('jpeg') || lower.endsWith('jpg')) return 'jpg';
+    return 'png';
+  }
+
+  Map<String, dynamic> _buildHistoryInputs({
+    required String imageFieldId,
+    required ToolInputValue imageValue,
+  }) {
+    final inputs = <String, dynamic>{};
+
+    for (final field in widget.tool.inputFields) {
+      final value = _inputValues[field.id];
+      if (field.type == 'text') {
+        inputs[field.label] = value?.text ?? '';
+      } else if (field.type == 'image' && field.id == imageFieldId) {
+        inputs[field.label] = imageValue.fileName ?? 'photo';
+      }
+    }
+
+    return inputs;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +290,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
             tooltip: isFavorite
                 ? l10n.removeFromFavorites
                 : l10n.addToFavorites,
-            onPressed: () =>
-                favorites.toggleFavorite(widget.tool.id),
+            onPressed: () => favorites.toggleFavorite(widget.tool.id),
           ),
         ],
       ),
@@ -65,6 +310,40 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                     subtitle: widget.tool.subtitle,
                   ),
                   const SizedBox(height: 16),
+
+                  if (widget.tool.aiProvider != null) ...[
+                    _SectionCard(
+                      title: l10n.toolProviderLabel,
+                      child: Consumer<ApiKeyProvider>(
+                        builder: (context, apiKeys, _) {
+                          final provider = widget.tool.aiProvider!;
+                          final hasKey = (apiKeys.keyFor(provider) ?? '').isNotEmpty;
+                          final status = hasKey
+                              ? l10n.toolProviderStatusReady
+                              : l10n.toolProviderStatusMissing;
+                          final statusColor = hasKey
+                              ? cs.primary
+                              : Theme.of(context).colorScheme.error;
+                          return Row(
+                            children: [
+                              Icon(
+                                hasKey ? Icons.verified_user : Icons.warning_amber_outlined,
+                                color: statusColor,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  '${provider.displayName} · $status',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
 
                   if (widget.tool.tags.isNotEmpty) ...[
                     _SectionCard(
@@ -135,9 +414,14 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                         for (final field in widget.tool.inputFields) ...[
                           DynamicInputWidget(
                             field: field,
+                            initialValue: _inputValues[field.id],
                             onChanged: (value) {
                               setState(() {
-                                _inputValues[field.id] = value;
+                                if (value.isEmpty) {
+                                  _inputValues.remove(field.id);
+                                } else {
+                                  _inputValues[field.id] = value;
+                                }
                               });
                             },
                           ),
@@ -149,7 +433,17 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
 
                   const SizedBox(height: 18),
 
-
+                  FilledButton.icon(
+                    onPressed: _isLoading ? null : _runTool,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.play_arrow_rounded),
+                    label: Text(_isLoading ? l10n.analysisInProgress : l10n.toolRunButton),
+                  ),
 
                   const SizedBox(height: 12),
 

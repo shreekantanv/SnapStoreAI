@@ -131,6 +131,7 @@ class ToolCard extends StatelessWidget {
                         label: Text(tag),
                         padding: const EdgeInsets.symmetric(horizontal: 6),
                         visualDensity: VisualDensity.compact,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       );
                     }).toList(),
                   ),
