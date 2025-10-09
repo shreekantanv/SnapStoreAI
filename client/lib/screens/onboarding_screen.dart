@@ -45,7 +45,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Future<void> _completeAndGoHome() async {
     await OnboardingStorage.markCompleted();
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, HomeScreen.routeName);
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      HomeScreen.routeName,
+      (route) => false,
+    );
   }
 
   Future<void> _next() async {
