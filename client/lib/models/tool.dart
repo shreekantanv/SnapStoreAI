@@ -2,6 +2,35 @@ import 'feature_pill.dart';
 import 'how_it_works_step.dart';
 import 'ai_provider.dart';
 
+enum ToolRuntime { imageStylization, storybookGenerator }
+
+extension ToolRuntimeInfo on ToolRuntime {
+  String get id => switch (this) {
+        ToolRuntime.imageStylization => 'image_stylization',
+        ToolRuntime.storybookGenerator => 'storybook_generator',
+      };
+
+  static ToolRuntime fromId(String? value) {
+    if (value == null || value.isEmpty) {
+      return ToolRuntime.imageStylization;
+    }
+
+    final normalized = value.trim().toLowerCase();
+    switch (normalized) {
+      case 'storybook':
+      case 'storybook_generator':
+      case 'gemini_storybook':
+        return ToolRuntime.storybookGenerator;
+      case 'image':
+      case 'image_edit':
+      case 'image_stylizer':
+      case 'image_stylization':
+      default:
+        return ToolRuntime.imageStylization;
+    }
+  }
+}
+
 class InputField {
   final String id;
   final String type;
@@ -41,6 +70,7 @@ class Tool {
   final List<FeaturePill> featurePills;
   final List<String> suggestedTools;
   final AiProvider? aiProvider;
+  final ToolRuntime runtime;
 
   Tool({
     required this.id,
@@ -58,6 +88,7 @@ class Tool {
     this.featurePills = const [],
     this.suggestedTools = const [],
     this.aiProvider,
+    this.runtime = ToolRuntime.imageStylization,
   });
 
   factory Tool.fromJson(Map<String, dynamic> json, String id) {
@@ -93,6 +124,7 @@ class Tool {
               .toList() ??
           [],
       aiProvider: AiProviderInfo.fromId(json['aiProvider'] as String?),
+      runtime: ToolRuntimeInfo.fromId(json['runtime'] as String?),
     );
   }
 }
