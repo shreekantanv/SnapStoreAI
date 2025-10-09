@@ -406,29 +406,29 @@ abstract class AppLocalizations {
   /// **'Remove photo'**
   String get imagePickerRemoveButton;
 
-  /// No description provided for @ghibliProviderUnsupported.
+  /// No description provided for @toolProviderUnsupported.
   ///
   /// In en, this message translates to:
-  /// **'This tool currently works with a ChatGPT-compatible API key.'**
-  String get ghibliProviderUnsupported;
+  /// **'This provider is not supported for this tool yet.'**
+  String get toolProviderUnsupported;
 
-  /// No description provided for @ghibliRunFailed.
+  /// No description provided for @toolRunFailed.
   ///
   /// In en, this message translates to:
-  /// **'We couldn't generate your artwork. {error}'**
-  String ghibliRunFailed(String error);
+  /// **'We couldn't complete the tool run. {error}'**
+  String toolRunFailed(String error);
 
-  /// No description provided for @ghibliResultTitle.
+  /// No description provided for @toolImageResultSummary.
   ///
   /// In en, this message translates to:
-  /// **'Ghibli Style Result'**
-  String get ghibliResultTitle;
+  /// **'Here is your stylized artwork, ready to save or share.'**
+  String get toolImageResultSummary;
 
-  /// No description provided for @ghibliResultSaveHint.
+  /// No description provided for @toolResultSingleImageRange.
   ///
   /// In en, this message translates to:
-  /// **'Press and hold the artwork to save or share.'**
-  String get ghibliResultSaveHint;
+  /// **'Single image'**
+  String get toolResultSingleImageRange;
 
   /// No description provided for @aiToolbox.
   ///

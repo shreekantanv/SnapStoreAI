@@ -108,15 +108,15 @@
   "imagePickerUploadButton": "Upload photo",
   "imagePickerReplaceButton": "Replace photo",
   "imagePickerRemoveButton": "Remove photo",
-  "ghibliProviderUnsupported": "This tool currently works with a ChatGPT-compatible API key.",
-  "ghibliRunFailed": "We couldn't generate your artwork. {error}",
-  "@ghibliRunFailed": {
+  "toolProviderUnsupported": "This provider is not supported for this tool yet.",
+  "toolRunFailed": "We couldn't complete the tool run. {error}",
+  "@toolRunFailed": {
     "placeholders": {
       "error": {
         "type": "String"
       }
     }
   },
-  "ghibliResultTitle": "Ghibli Style Result",
-  "ghibliResultSaveHint": "Press and hold the artwork to save or share."
+  "toolImageResultSummary": "Here is your stylized artwork, ready to save or share.",
+  "toolResultSingleImageRange": "Single image"
 }

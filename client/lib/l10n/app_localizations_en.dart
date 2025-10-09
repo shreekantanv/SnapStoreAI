@@ -175,17 +175,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get imagePickerRemoveButton => 'Remove photo';
 
   @override
-  String get ghibliProviderUnsupported =>
-      'This tool currently works with a ChatGPT-compatible API key.';
+  String get toolProviderUnsupported =>
+      'This provider is not supported for this tool yet.';
 
   @override
-  String ghibliRunFailed(String error) => "We couldn't generate your artwork. $error";
+  String toolRunFailed(String error) =>
+      "We couldn't complete the tool run. $error";
 
   @override
-  String get ghibliResultTitle => 'Ghibli Style Result';
+  String get toolImageResultSummary =>
+      'Here is your stylized artwork, ready to save or share.';
 
   @override
-  String get ghibliResultSaveHint => 'Press and hold the artwork to save or share.';
+  String get toolResultSingleImageRange => 'Single image';
 
   @override
   String get aiToolbox => 'AI Toolbox';

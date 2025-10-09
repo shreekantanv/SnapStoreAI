@@ -1,20 +1,26 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 
 import 'package:client/models/ai_provider.dart';
+import 'package:client/models/analysis_result.dart';
 import 'package:client/models/tool.dart';
 import 'package:client/models/tool_input_value.dart';
-import 'package:client/screens/tools/ghibli_result_screen.dart';
-import 'package:client/services/ghibli_style_service.dart';
+import 'package:client/screens/tools/tool_result_screen.dart';
 import 'package:client/utils/icon_mapper.dart';
 import 'package:client/widgets/dynamic_input_widget.dart';
 import 'package:client/widgets/feature_pill_widget.dart';
 import 'package:client/widgets/how_it_works_carousel.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 
 import 'package:provider/provider.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../providers/api_key_provider.dart';
 import '../../providers/favorite_tools_provider.dart';
+import '../../providers/history_provider.dart';
 
 class ToolEntryScreen extends StatefulWidget {
   static const routeName = '/tool-entry';
@@ -27,18 +33,18 @@ class ToolEntryScreen extends StatefulWidget {
 
 class _ToolEntryScreenState extends State<ToolEntryScreen> {
   final _inputValues = <String, ToolInputValue>{};
-  late final GhibliStyleService _ghibliService;
+  late final http.Client _httpClient;
   bool _isLoading = false;
 
   @override
   void initState() {
     super.initState();
-    _ghibliService = GhibliStyleService();
+    _httpClient = http.Client();
   }
 
   @override
   void dispose() {
-    _ghibliService.dispose();
+    _httpClient.close();
     super.dispose();
   }
 
@@ -64,16 +70,10 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
 
     final hasImageInput = widget.tool.inputFields.any((f) => f.type == 'image');
     if (!hasImageInput) {
-      setState(() => _isLoading = true);
-      try {
-        final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))));
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
-      }
+      final suffix = apiKey.length > 4 ? apiKey.substring(apiKey.length - 4) : apiKey;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.toolApiKeyInUse(provider.displayName, suffix))),
+      );
       return;
     }
 
@@ -118,7 +118,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
           ..writeln(additionalInstructions.join('\n'));
       }
 
-      final result = await _ghibliService.stylize(
+      final generatedImage = await _generateStylizedImage(
         provider: provider,
         apiKey: apiKey,
         imageBytes: imageValue.bytes!,
@@ -128,27 +128,149 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
 
       if (!mounted) return;
 
+      final analysisResult = AnalysisResult(
+        status: AnalysisStatus.success,
+        subjectImageBytes: generatedImage,
+        summary: l10n.toolImageResultSummary,
+        meta: Meta(
+          analyzedItemsCount: 1,
+          timeRange: l10n.toolResultSingleImageRange,
+          modelUsed: provider.displayName,
+        ),
+      );
+
+      final historyInputs =
+          _buildHistoryInputs(imageFieldId: imageField.id, imageValue: imageValue);
+      final outputs = <String, dynamic>{
+        'image': 'data:image/png;base64,${base64Encode(generatedImage)}',
+      };
+
+      final summary = analysisResult.summary;
+      if (summary != null && summary.isNotEmpty) {
+        outputs['summary'] = summary;
+      }
+
+      try {
+        await context.read<HistoryProvider>().recordActivity(
+              toolId: widget.tool.id,
+              inputs: historyInputs,
+              outputs: outputs,
+            );
+      } catch (_) {
+        // History persistence failures should not block the result experience.
+      }
+
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => GhibliResultScreen(
-            imageBytes: result.imageBytes,
+          builder: (_) => ResultsScreen(
+            result: analysisResult,
             tool: widget.tool,
           ),
         ),
       );
     } on UnsupportedError catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.ghibliProviderUnsupported)),
+        SnackBar(content: Text(l10n.toolProviderUnsupported)),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.ghibliRunFailed(e.toString()))),
+        SnackBar(content: Text(l10n.toolRunFailed(e.toString()))),
       );
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  Future<Uint8List> _generateStylizedImage({
+    required AiProvider provider,
+    required String apiKey,
+    required Uint8List imageBytes,
+    required String imageMimeType,
+    required String prompt,
+  }) async {
+    switch (provider) {
+      case AiProvider.chatgpt:
+        return _runOpenAiEdit(
+          apiKey: apiKey,
+          imageBytes: imageBytes,
+          imageMimeType: imageMimeType,
+          prompt: prompt,
+        );
+      case AiProvider.gemini:
+      case AiProvider.grok:
+        throw UnsupportedError('Provider not supported for this tool');
+    }
+  }
+
+  Future<Uint8List> _runOpenAiEdit({
+    required String apiKey,
+    required Uint8List imageBytes,
+    required String imageMimeType,
+    required String prompt,
+  }) async {
+    final uri = Uri.parse('https://api.openai.com/v1/images/edits');
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $apiKey'
+      ..headers['Accept'] = 'application/json'
+      ..fields['prompt'] = prompt
+      ..fields['size'] = '1024x1024'
+      ..fields['n'] = '1'
+      ..fields['response_format'] = 'b64_json'
+      ..files.add(
+        http.MultipartFile.fromBytes(
+          'image',
+          imageBytes,
+          filename: 'upload.${_extensionFromMime(imageMimeType)}',
+          contentType: MediaType.parse(imageMimeType),
+        ),
+      );
+
+    final streamed = await _httpClient.send(request);
+    final response = await http.Response.fromStream(streamed);
+    if (response.statusCode >= 400) {
+      throw Exception('HTTP ${response.statusCode}: ${response.body}');
+    }
+
+    final decoded = json.decode(response.body) as Map<String, dynamic>;
+    final data = decoded['data'] as List<dynamic>?;
+    if (data == null || data.isEmpty) {
+      throw Exception('No image data returned.');
+    }
+
+    final first = data.first as Map<String, dynamic>;
+    final base64Image = first['b64_json'] as String?;
+    if (base64Image == null) {
+      throw Exception('Image payload missing.');
+    }
+
+    return base64Decode(base64Image);
+  }
+
+  String _extensionFromMime(String mime) {
+    final lower = mime.toLowerCase();
+    if (lower.endsWith('png')) return 'png';
+    if (lower.endsWith('jpeg') || lower.endsWith('jpg')) return 'jpg';
+    return 'png';
+  }
+
+  Map<String, dynamic> _buildHistoryInputs({
+    required String imageFieldId,
+    required ToolInputValue imageValue,
+  }) {
+    final inputs = <String, dynamic>{};
+
+    for (final field in widget.tool.inputFields) {
+      final value = _inputValues[field.id];
+      if (field.type == 'text') {
+        inputs[field.label] = value?.text ?? '';
+      } else if (field.type == 'image' && field.id == imageFieldId) {
+        inputs[field.label] = imageValue.fileName ?? 'photo';
+      }
+    }
+
+    return inputs;
   }
 
   @override

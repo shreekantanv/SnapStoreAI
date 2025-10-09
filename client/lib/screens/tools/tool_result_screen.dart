@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -97,6 +98,91 @@ class _PremiumSuccess extends StatelessWidget {
   Widget build(BuildContext context) {
     final nowStr = DateFormat.yMMMEd().add_jm().format(DateTime.now());
     final cs = Theme.of(context).colorScheme;
+    final hasMeta = result.meta != null;
+    final hasSpectrum = result.spectrum != null;
+    final hasAlignments = (result.alignments?.isNotEmpty ?? false);
+    final hasSummary = (result.summary?.trim().isNotEmpty ?? false);
+    final hasHeroImage =
+        result.subjectImageBytes != null || (result.subjectImage?.isNotEmpty ?? false);
+
+    final content = <Widget>[];
+
+    if (hasHeroImage) {
+      content
+        ..add(
+          _HeroMedia(
+            imageBytes: result.subjectImageBytes,
+            imageUrl: result.subjectImage,
+          ),
+        )
+        ..add(const SizedBox(height: 16));
+    }
+
+    if (hasSpectrum) {
+      content
+        ..add(_GlassCard(child: _SpectrumSection(spectrum: result.spectrum!)))
+        ..add(const SizedBox(height: 12));
+    }
+
+    if (hasAlignments) {
+      content
+        ..add(_GlassCard(child: _AlignmentSection(alignments: result.alignments!)))
+        ..add(const SizedBox(height: 12));
+    }
+
+    if (iconListItems.isNotEmpty) {
+      content
+        ..add(
+          _GlassCard(
+            child: PremiumIconList(
+              header: 'Topics',
+              items: iconListItems,
+              tagAsPill: true,
+              tagColor: (ctx, it) {
+                final s = (it.tag ?? '').toLowerCase();
+                final palette = Theme.of(ctx).colorScheme;
+                if (s.startsWith('prog')) return palette.tertiary;
+                if (s.startsWith('cons')) return palette.primary;
+                if (s.startsWith('cent')) return palette.secondary;
+                return palette.onSurface.withOpacity(0.7);
+              },
+              trailingBuilder: (ctx, it) => Icon(
+                Icons.chevron_right,
+                color: Theme.of(ctx).colorScheme.onSurface.withOpacity(0.35),
+              ),
+            ),
+          ),
+        )
+        ..add(const SizedBox(height: 12));
+    }
+
+    if (hasSummary) {
+      content
+        ..add(_GlassCard(child: _SummarySection(summary: result.summary!)))
+        ..add(const SizedBox(height: 12));
+    }
+
+    if (tool.suggestedTools.isNotEmpty) {
+      content
+        ..add(_SuggestedNextSteps(tool: tool))
+        ..add(const SizedBox(height: 16));
+    }
+
+    content
+      ..add(
+        _PrimaryActions(
+          onShareImage: () => _toast(context, 'Share coming soon'),
+          onExportJson: () => _toast(context, 'Export coming soon'),
+          onRerun: () => Navigator.of(context).pop(),
+        ),
+      )
+      ..add(const SizedBox(height: 20));
+
+    if (hasMeta) {
+      content
+        ..add(_FooterMeta(meta: result.meta!))
+        ..add(const SizedBox(height: 12));
+    }
 
     return Stack(
       children: [
@@ -119,20 +205,22 @@ class _PremiumSuccess extends StatelessWidget {
         CustomScrollView(
           slivers: [
             SliverAppBar(
+              title: Text(tool.title),
               centerTitle: false,
               actions: [
-                IconButton(
-                  tooltip: 'Methodology & Limitations',
-                  icon: const Icon(Icons.info_outline),
-                  onPressed: () => showModalBottomSheet(
-                    context: context,
-                    showDragHandle: true,
-                    useSafeArea: true,
-                    isScrollControlled: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => _MethodologySheet(meta: result.meta!),
+                if (hasMeta)
+                  IconButton(
+                    tooltip: 'Methodology & Limitations',
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () => showModalBottomSheet(
+                      context: context,
+                      showDragHandle: true,
+                      useSafeArea: true,
+                      isScrollControlled: true,
+                      backgroundColor: Colors.transparent,
+                      builder: (_) => _MethodologySheet(meta: result.meta!),
+                    ),
                   ),
-                ),
               ],
               bottom: PreferredSize(
                 preferredSize: const Size.fromHeight(22),
@@ -153,66 +241,7 @@ class _PremiumSuccess extends StatelessWidget {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: Column(
-                  children: [
-                    if (result.subjectImage != null)
-                      _HeroMedia(imageUrl: result.subjectImage!),
-                    const SizedBox(height: 16),
-
-                    _GlassCard(
-                      child: _SpectrumSection(spectrum: result.spectrum!),
-                    ),
-                    const SizedBox(height: 12),
-
-                    _GlassCard(
-                      child: _AlignmentSection(alignments: result.alignments!),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // ⬇️ New “Topics” (generic premium icon list)
-                    if (iconListItems.isNotEmpty) ...[
-                      _GlassCard(
-                        child: PremiumIconList(
-                          header: 'Topics',
-                          items: iconListItems,
-                          tagAsPill: true,
-                          tagColor: (ctx, it) {
-                            final s = (it.tag ?? '').toLowerCase();
-                            final cs = Theme.of(ctx).colorScheme;
-                            if (s.startsWith('prog')) return cs.tertiary;
-                            if (s.startsWith('cons')) return cs.primary;
-                            if (s.startsWith('cent')) return cs.secondary;
-                            return cs.onSurface.withOpacity(0.7);
-                          },
-                          trailingBuilder: (ctx, it) => Icon(
-                            Icons.chevron_right,
-                            color: Theme.of(ctx)
-                                .colorScheme
-                                .onSurface
-                                .withOpacity(0.35),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-
-                    _GlassCard(
-                      child: _SummarySection(summary: result.summary!),
-                    ),
-                    const SizedBox(height: 12),
-
-                    _SuggestedNextSteps(tool: tool),
-                    const SizedBox(height: 16),
-
-                    _PrimaryActions(
-                      onShareImage: () => _toast(context, 'Share coming soon'),
-                      onExportJson: () => _toast(context, 'Export coming soon'),
-                      onRerun: () => Navigator.of(context).pop(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    _FooterMeta(meta: result.meta!),
-                    const SizedBox(height: 12),
-                  ],
+                  children: content,
                 ),
               ),
             ),
@@ -228,12 +257,44 @@ class _PremiumSuccess extends StatelessWidget {
 /// ----------------------
 
 class _HeroMedia extends StatelessWidget {
-  final String imageUrl;
-  const _HeroMedia({required this.imageUrl});
+  final String? imageUrl;
+  final Uint8List? imageBytes;
+
+  const _HeroMedia({this.imageUrl, this.imageBytes});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+
+    Widget buildImage() {
+      if (imageBytes != null && imageBytes!.isNotEmpty) {
+        return Image.memory(
+          imageBytes!,
+          fit: BoxFit.cover,
+        );
+      }
+
+      if (imageUrl != null && imageUrl!.isNotEmpty) {
+        return Image.network(
+          imageUrl!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: cs.surfaceContainerHighest.withOpacity(0.3),
+            child: const Center(
+              child: Icon(Icons.image_not_supported, size: 48),
+            ),
+          ),
+        );
+      }
+
+      return Container(
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
+        child: const Center(
+          child: Icon(Icons.image, size: 48),
+        ),
+      );
+    }
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: Stack(
@@ -241,16 +302,7 @@ class _HeroMedia extends StatelessWidget {
           // Image
           AspectRatio(
             aspectRatio: 16 / 9,
-            child: Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                color: cs.surfaceContainerHighest.withOpacity(0.3),
-                child: const Center(
-                  child: Icon(Icons.image_not_supported, size: 48),
-                ),
-              ),
-            ),
+            child: buildImage(),
           ),
           // Subtle overlay gradient
           Positioned.fill(
