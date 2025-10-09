@@ -64,7 +64,9 @@ class _HomeScreenState extends State<HomeScreen> {
           return Scaffold(body: Center(child: Text('Error: ${snapshot.error}')));
         }
         final allTools = snapshot.data ?? [];
-        final categorySet = <String>{...allTools.map((t) => t.category)}
+        final categorySet = <String>{
+          ...allTools.expand((t) => t.categories),
+        }
           ..removeWhere((element) => element.trim().isEmpty);
         final categories = ['All', ...categorySet.toList()..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()))];
         final tags = allTools
@@ -80,8 +82,8 @@ class _HomeScreenState extends State<HomeScreen> {
           final matchesSearch = q.isEmpty ||
               t.title.toLowerCase().contains(q) ||
               t.subtitle.toLowerCase().contains(q);
-          final matchesCategory =
-              _selectedCategory == 'All' || t.category == _selectedCategory;
+          final matchesCategory = _selectedCategory == 'All' ||
+              t.categories.contains(_selectedCategory);
           final matchesTags =
               _selectedTags.isEmpty || _selectedTags.every(t.tags.contains);
           return matchesSearch && matchesCategory && matchesTags;
