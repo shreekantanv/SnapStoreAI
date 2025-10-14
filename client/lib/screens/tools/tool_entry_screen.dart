@@ -38,6 +38,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   bool _isLoading = false;
   final Map<String, PageController> _carouselControllers = {};
   final Map<String, int> _carouselIndices = {};
+  final Map<String, int> _wizardIndices = {};
 
   @override
   void initState() {
@@ -613,144 +614,136 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                   Builder(
                     builder: (context) {
                       final otherFields = <InputField>[];
-                      final groupDrafts = <String, _CarouselGroupDraft>{};
-                      final groupOrder = <String>[];
+                      final carouselDrafts = <String, _CarouselGroupDraft>{};
+                      final carouselOrder = <String>[];
+                      final wizardDrafts = <String, _WizardGroupDraft>{};
+                      final wizardOrder = <String>[];
                       final profilePattern = RegExp(r'^profile(\d+)_');
 
                       for (final field in widget.tool.inputFields) {
-                        final ui = field.ui;
-                        final variant = ui?.variant?.toLowerCase();
-                        final hasCarouselUi =
-                            variant == 'carousel' && ui?.groupId != null && ui?.groupItemId != null;
-
-                        if (!hasCarouselUi) {
-                          final legacyMatch = profilePattern.firstMatch(field.id);
-                          if (legacyMatch != null) {
-                            final rawIndex = legacyMatch.group(1)!;
-                            final numericIndex = int.tryParse(rawIndex);
-                            final displayIndex =
-                                (numericIndex != null && numericIndex > 0)
-                                    ? '$numericIndex'
-                                    : rawIndex;
-                            final pageIndexValue = numericIndex != null
-                                ? numericIndex.toDouble()
-                                : double.tryParse(rawIndex) ?? 0.0;
-                            final syntheticOptions = <String, dynamic>{
-                              'itemLabel': 'Profile',
-                              'pageIndex': pageIndexValue,
-                              'previousTooltip': 'Previous profile',
-                              'nextTooltip': 'Next profile',
-                            };
-                            final syntheticUi = InputFieldUiConfig(
-                              variant: 'carousel',
-                              groupId: 'profiles',
-                              groupLabel: 'Profiles',
-                              groupItemId: 'profile$rawIndex',
-                              groupItemLabel: 'Profile $displayIndex',
-                              options: Map<String, dynamic>.unmodifiable(syntheticOptions),
-                            );
-                            final draft = groupDrafts.putIfAbsent(
-                              syntheticUi.groupId!,
-                              () {
-                                groupOrder.add(syntheticUi.groupId!);
-                                return _CarouselGroupDraft(id: syntheticUi.groupId!);
-                              },
-                            );
-                            draft.applyUi(syntheticUi);
-                            draft.addField(field, overrideUi: syntheticUi);
-                            continue;
-                          }
-
-                          otherFields.add(field);
+                        final assignment = _resolveWizardAssignment(
+                          field,
+                          profilePattern: profilePattern,
+                        );
+                        if (assignment != null) {
+                          final draft = wizardDrafts.putIfAbsent(
+                            assignment.groupId,
+                            () {
+                              final draft = _WizardGroupDraft(
+                                id: assignment.groupId,
+                                insertionIndex: wizardOrder.length,
+                              );
+                              wizardOrder.add(assignment.groupId);
+                              return draft;
+                            },
+                          );
+                          draft.applyAssignment(assignment);
+                          draft.addField(
+                            field,
+                            assignment: assignment,
+                            profilePattern: profilePattern,
+                          );
                           continue;
                         }
 
-                        final groupId = ui!.groupId!;
-                        final draft = groupDrafts.putIfAbsent(groupId, () {
-                          groupOrder.add(groupId);
-                          return _CarouselGroupDraft(id: groupId);
-                        });
-                        draft.applyUi(ui);
-                        draft.addField(field);
+                        final handledByCarousel = _registerCarouselField(
+                          field: field,
+                          drafts: carouselDrafts,
+                          order: carouselOrder,
+                          profilePattern: profilePattern,
+                        );
+                        if (handledByCarousel) {
+                          continue;
+                        }
+
+                        otherFields.add(field);
                       }
 
+                      final wizardGroups = <_WizardGroupData>[];
+                      for (final id in wizardOrder) {
+                        final group = wizardDrafts[id]?.build();
+                        if (group != null) {
+                          wizardGroups.add(group);
+                        }
+                      }
+                      wizardGroups.sort((a, b) {
+                        final ao = a.order;
+                        final bo = b.order;
+                        if (ao != null && bo != null && ao != bo) {
+                          return ao.compareTo(bo);
+                        }
+                        if (ao != null && bo == null) {
+                          return -1;
+                        }
+                        if (ao == null && bo != null) {
+                          return 1;
+                        }
+                        return a.insertionIndex.compareTo(b.insertionIndex);
+                      });
+
                       final carouselGroups = <_CarouselGroupData>[];
-                      for (final id in groupOrder) {
-                        final group = groupDrafts[id]?.build();
+                      for (final id in carouselOrder) {
+                        final group = carouselDrafts[id]?.build();
                         if (group != null) {
                           carouselGroups.add(group);
                         }
                       }
 
-                      _syncCarouselControllers(
-                          carouselGroups.map((group) => group.id).toSet());
+                      final activeCarouselGroupIds = <String>{};
+                      for (final group in wizardGroups) {
+                        for (final step in group.steps) {
+                          for (final carousel in step.carousels) {
+                            activeCarouselGroupIds.add(carousel.id);
+                          }
+                        }
+                      }
+                      for (final group in carouselGroups) {
+                        activeCarouselGroupIds.add(group.id);
+                      }
+                      _syncCarouselControllers(activeCarouselGroupIds);
+                      _syncWizardIndices(wizardGroups.map((group) => group.id).toSet());
 
                       Widget buildOtherFields() {
                         return Column(
                           children: [
-                            for (final field in otherFields) ...[
-                              _buildInputField(field),
-                              const SizedBox(height: 12),
+                            for (var i = 0; i < otherFields.length; i++) ...[
+                              _buildInputField(otherFields[i]),
+                              if (i != otherFields.length - 1)
+                                const SizedBox(height: 12),
                             ],
                           ],
                         );
                       }
 
-                      if (carouselGroups.isEmpty) {
-                        return _SectionCard(
-                          title: 'Input Fields',
-                          child: buildOtherFields(),
+                      final sections = <Widget>[];
+                      void addSection(Widget section) {
+                        if (sections.isNotEmpty) {
+                          sections.add(const SizedBox(height: 16));
+                        }
+                        sections.add(section);
+                      }
+
+                      for (final group in wizardGroups) {
+                        addSection(
+                          _SectionCard(
+                            title: group.title ?? 'Guided setup',
+                            child: _buildWizardGroup(group),
+                          ),
                         );
                       }
 
-                      final inputSections = <Widget>[];
-
-                      if (otherFields.isNotEmpty) {
-                        inputSections
-                          ..add(
-                            _SectionCard(
-                              title: 'Input Fields',
-                              child: buildOtherFields(),
-                            ),
-                          )
-                          ..add(const SizedBox(height: 16));
-                      }
-
-                      for (var i = 0; i < carouselGroups.length; i++) {
-                        final group = carouselGroups[i];
-                        final pageCount = group.pages.length;
-                        if (pageCount == 0) {
+                      for (final group in carouselGroups) {
+                        final state = _resolveCarouselState(group);
+                        if (state == null) {
                           continue;
                         }
 
-                        final previousIndex = _carouselIndices[group.id];
-                        final clampedIndex =
-                            (previousIndex ?? 0).clamp(0, pageCount - 1);
-                        final existingController = _carouselControllers[group.id];
-
-                        if (existingController == null) {
-                          _carouselControllers[group.id] =
-                              PageController(initialPage: clampedIndex);
-                        } else if (previousIndex != null &&
-                            clampedIndex != previousIndex) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            if (!mounted) return;
-                            final controller = _carouselControllers[group.id];
-                            if (controller != null && controller.hasClients) {
-                              controller.jumpToPage(clampedIndex);
-                            }
-                          });
-                        }
-
-                        _carouselIndices[group.id] = clampedIndex;
-                        final controller = _carouselControllers[group.id]!;
-
-                        inputSections.add(
+                        addSection(
                           _SectionCard(
                             title: group.title ?? 'Inputs',
                             child: _InputCarousel(
-                              controller: controller,
-                              currentIndex: clampedIndex,
+                              controller: state.controller,
+                              currentIndex: state.currentIndex,
                               onIndexChanged: (index) {
                                 setState(() {
                                   _carouselIndices[group.id] = index;
@@ -762,13 +755,21 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                             ),
                           ),
                         );
-
-                        if (i != carouselGroups.length - 1) {
-                          inputSections.add(const SizedBox(height: 16));
-                        }
                       }
 
-                      if (inputSections.isEmpty) {
+                      if (otherFields.isNotEmpty) {
+                        final baseTitle = (wizardGroups.isNotEmpty || carouselGroups.isNotEmpty)
+                            ? 'Additional inputs'
+                            : 'Input Fields';
+                        addSection(
+                          _SectionCard(
+                            title: baseTitle,
+                            child: buildOtherFields(),
+                          ),
+                        );
+                      }
+
+                      if (sections.isEmpty) {
                         return _SectionCard(
                           title: 'Input Fields',
                           child: buildOtherFields(),
@@ -777,7 +778,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
 
                       return Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: inputSections,
+                        children: sections,
                       );
                     },
                   ),
@@ -825,6 +826,405 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
     }
   }
 
+  void _syncWizardIndices(Set<String> activeGroupIds) {
+    final keysToRemove = _wizardIndices.keys
+        .where((key) => !activeGroupIds.contains(key))
+        .toList(growable: false);
+    for (final key in keysToRemove) {
+      _wizardIndices.remove(key);
+    }
+  }
+
+  _CarouselState? _resolveCarouselState(_CarouselGroupData group) {
+    final pageCount = group.pages.length;
+    if (pageCount == 0) {
+      _carouselControllers.remove(group.id)?.dispose();
+      _carouselIndices.remove(group.id);
+      return null;
+    }
+
+    final previousIndex = _carouselIndices[group.id];
+    final clampedIndex = (previousIndex ?? 0).clamp(0, pageCount - 1);
+    final existingController = _carouselControllers[group.id];
+
+    if (existingController == null) {
+      _carouselControllers[group.id] = PageController(initialPage: clampedIndex);
+    } else if (previousIndex != null && clampedIndex != previousIndex) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final controller = _carouselControllers[group.id];
+        if (controller != null && controller.hasClients) {
+          controller.jumpToPage(clampedIndex);
+        }
+      });
+    }
+
+    _carouselIndices[group.id] = clampedIndex;
+    return _CarouselState(
+      controller: _carouselControllers[group.id]!,
+      currentIndex: clampedIndex,
+    );
+  }
+
+  Widget _buildWizardGroup(_WizardGroupData group) {
+    final totalSteps = group.steps.length;
+    if (totalSteps == 0) {
+      return const SizedBox.shrink();
+    }
+
+    var index = _wizardIndices[group.id] ?? 0;
+    index = index.clamp(0, totalSteps - 1);
+    if (_wizardIndices[group.id] != index) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _wizardIndices[group.id] = index;
+      });
+    }
+
+    final step = group.steps[index];
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+    final children = <Widget>[];
+
+    if (group.subtitle != null && group.subtitle!.trim().isNotEmpty) {
+      children.add(
+        Text(
+          group.subtitle!,
+          style: tt.bodyMedium?.copyWith(
+            color: cs.onSurface.withOpacity(0.75),
+            height: 1.3,
+          ),
+        ),
+      );
+      children.add(const SizedBox(height: 12));
+    }
+
+    final showProgress = group.options.showProgressIndicator && totalSteps > 1;
+    if (showProgress) {
+      children.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(999),
+              child: LinearProgressIndicator(
+                value: (index + 1) / totalSteps,
+                minHeight: 6,
+                backgroundColor: cs.surfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Step ${index + 1} of $totalSteps',
+              style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      );
+    } else {
+      children.add(
+        Text(
+          'Step ${index + 1} of $totalSteps',
+          style: tt.labelLarge?.copyWith(fontWeight: FontWeight.w600),
+        ),
+      );
+    }
+
+    children.add(const SizedBox(height: 8));
+
+    final stepTitle = step.title ?? 'Step ${index + 1}';
+    children.add(
+      Text(
+        stepTitle,
+        style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+    );
+
+    if (step.description != null && step.description!.trim().isNotEmpty) {
+      children.add(const SizedBox(height: 8));
+      children.add(
+        Text(
+          step.description!,
+          style: tt.bodyMedium?.copyWith(
+            color: cs.onSurface.withOpacity(0.78),
+            height: 1.35,
+          ),
+        ),
+      );
+    }
+
+    final contentWidgets = <Widget>[];
+    for (final carousel in step.carousels) {
+      final state = _resolveCarouselState(carousel);
+      if (state == null) continue;
+
+      if (carousel.title != null && carousel.title!.trim().isNotEmpty) {
+        contentWidgets.add(
+          Text(
+            carousel.title!,
+            style: tt.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+          ),
+        );
+        contentWidgets.add(const SizedBox(height: 8));
+      }
+
+      contentWidgets.add(
+        _InputCarousel(
+          controller: state.controller,
+          currentIndex: state.currentIndex,
+          onIndexChanged: (value) {
+            setState(() {
+              _carouselIndices[carousel.id] = value;
+            });
+          },
+          options: carousel.options,
+          pages: carousel.pages,
+          buildField: _buildInputField,
+        ),
+      );
+      contentWidgets.add(const SizedBox(height: 16));
+    }
+
+    for (var i = 0; i < step.fields.length; i++) {
+      contentWidgets.add(_buildInputField(step.fields[i]));
+      if (i != step.fields.length - 1) {
+        contentWidgets.add(const SizedBox(height: 12));
+      }
+    }
+
+    if (contentWidgets.isNotEmpty) {
+      children.add(const SizedBox(height: 16));
+      children.add(
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: contentWidgets,
+        ),
+      );
+    }
+
+    final isFirst = index == 0;
+    final isLast = index == totalSteps - 1;
+
+    final previousLabel = step.previousLabel ?? group.options.previousLabel;
+    final nextLabel = isLast
+        ? (step.doneLabel ?? group.options.doneLabel)
+        : (step.nextLabel ?? group.options.nextLabel);
+
+    final backAction = (!isFirst && !_isLoading)
+        ? () => setState(() => _wizardIndices[group.id] = index - 1)
+        : null;
+
+    VoidCallback? primaryAction;
+    if (_isLoading) {
+      primaryAction = null;
+    } else if (isLast) {
+      primaryAction = _runTool;
+    } else {
+      primaryAction = () {
+        setState(() => _wizardIndices[group.id] = index + 1);
+      };
+    }
+
+    Widget buildPrimaryChild() {
+      if (_isLoading && isLast) {
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+            SizedBox(width: 8),
+            Text('Generating...'),
+          ],
+        );
+      }
+      return Text(nextLabel);
+    }
+
+    children.add(const SizedBox(height: 20));
+    children.add(
+      Row(
+        children: [
+          Expanded(
+            child: OutlinedButton(
+              onPressed: backAction,
+              child: Text(previousLabel),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: FilledButton(
+              onPressed: primaryAction,
+              child: buildPrimaryChild(),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (isLast && !_isLoading) {
+      children.add(const SizedBox(height: 12));
+      children.add(
+        Text(
+          'Ready to generate your story. You can also adjust earlier steps or use the run button below.',
+          style: tt.bodySmall?.copyWith(
+            color: cs.onSurface.withOpacity(0.65),
+          ),
+        ),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: children,
+    );
+  }
+
+  _WizardAssignment? _resolveWizardAssignment(
+    InputField field, {
+    required RegExp profilePattern,
+  }) {
+    final metadataAssignment = _WizardAssignment.fromUi(field);
+    if (metadataAssignment != null) {
+      return metadataAssignment;
+    }
+
+    if (widget.tool.runtime == ToolRuntime.storybookGenerator) {
+      return _storybookWizardAssignment(
+        field,
+        profilePattern: profilePattern,
+      );
+    }
+
+    return null;
+  }
+
+  _WizardAssignment? _storybookWizardAssignment(
+    InputField field, {
+    required RegExp profilePattern,
+  }) {
+    const wizardId = 'storybook_daily_wizard';
+    const wizardLabel = 'Guided story setup';
+    const wizardDescription =
+        'Work through a few focused steps so the storybook has everything it needs.';
+
+    const basicsFields = {
+      'seriesId',
+      'date',
+      'readingLevel',
+      'language',
+      'bilingual',
+    };
+
+    const profileExtras = {
+      'heroProfileId',
+      'supportingProfileIds',
+    };
+
+    const momentsFields = {
+      'memoriesToday',
+      'place',
+      'feeling',
+      'moral',
+      'objectOfTheDay',
+      'photoMomentUploads',
+      'photoMomentUrls',
+    };
+
+    const styleFields = {
+      'artStyle',
+      'backgroundVibe',
+      'pages',
+      'narration',
+      'narratorVoice',
+      'continuityMode',
+      'continueFromStoryId',
+    };
+
+    if (basicsFields.contains(field.id)) {
+      return _WizardAssignment(
+        groupId: wizardId,
+        groupLabel: wizardLabel,
+        groupDescription: wizardDescription,
+        groupOrder: 0,
+        showProgress: true,
+        previousLabel: 'Back',
+        nextLabel: 'Next step',
+        doneLabel: 'Generate story',
+        stepId: 'basics',
+        stepLabel: 'Story basics',
+        stepDescription:
+            'Set the series name, date, reading level, and language preferences.',
+        stepOrder: 0,
+      );
+    }
+
+    if (profilePattern.hasMatch(field.id) || profileExtras.contains(field.id)) {
+      return _WizardAssignment(
+        groupId: wizardId,
+        groupLabel: wizardLabel,
+        groupDescription: wizardDescription,
+        groupOrder: 0,
+        showProgress: true,
+        previousLabel: 'Back',
+        nextLabel: 'Next step',
+        doneLabel: 'Generate story',
+        stepId: 'profiles',
+        stepLabel: 'Family profiles',
+        stepDescription:
+            'Add each family member, upload photos, and choose who stars in today\'s adventure.',
+        stepOrder: 1,
+        carouselGroupId: 'profiles',
+        carouselGroupLabel: 'Family profiles',
+        carouselItemLabel: 'Family member',
+        carouselItemIdPrefix: 'profile',
+        carouselPreviousTooltip: 'Previous family member',
+        carouselNextTooltip: 'Next family member',
+      );
+    }
+
+    if (momentsFields.contains(field.id)) {
+      return _WizardAssignment(
+        groupId: wizardId,
+        groupLabel: wizardLabel,
+        groupDescription: wizardDescription,
+        groupOrder: 0,
+        showProgress: true,
+        previousLabel: 'Back',
+        nextLabel: 'Next step',
+        doneLabel: 'Generate story',
+        stepId: 'moments',
+        stepLabel: 'Today\'s memories',
+        stepDescription:
+            'Capture what happened today and share optional photos to inspire each scene.',
+        stepOrder: 2,
+      );
+    }
+
+    if (styleFields.contains(field.id)) {
+      return _WizardAssignment(
+        groupId: wizardId,
+        groupLabel: wizardLabel,
+        groupDescription: wizardDescription,
+        groupOrder: 0,
+        showProgress: true,
+        previousLabel: 'Back',
+        nextLabel: 'Next step',
+        doneLabel: 'Generate story',
+        stepId: 'style',
+        stepLabel: 'Style & extras',
+        stepDescription:
+            'Pick the art direction, backgrounds, narration, and continuity for this book.',
+        stepOrder: 3,
+        stepDoneLabel: 'Generate story',
+      );
+    }
+
+    return null;
+  }
+
   Widget _buildInputField(InputField field) {
     return DynamicInputWidget(
       field: field,
@@ -842,6 +1242,117 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   }
 }
 
+String? _cleanOptionString(dynamic value) {
+  if (value is String) {
+    final trimmed = value.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
+  return null;
+}
+
+bool? _parseOptionBool(dynamic value) {
+  if (value is bool) return value;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'true') return true;
+    if (normalized == 'false') return false;
+  }
+  return null;
+}
+
+double? _parseOptionDouble(dynamic value) {
+  if (value is num) {
+    final doubleValue = value.toDouble();
+    return doubleValue.isFinite ? doubleValue : null;
+  }
+  if (value is String) {
+    final parsed = double.tryParse(value.trim());
+    if (parsed != null && parsed.isFinite) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+bool _registerCarouselField({
+  required InputField field,
+  required Map<String, _CarouselGroupDraft> drafts,
+  required List<String> order,
+  required RegExp profilePattern,
+  InputFieldUiConfig? overrideUi,
+  String? fallbackGroupId,
+  String? fallbackGroupLabel,
+  String? fallbackItemLabel,
+  String? fallbackItemIdPrefix,
+  String? fallbackPreviousTooltip,
+  String? fallbackNextTooltip,
+}) {
+  final ui = overrideUi ?? field.ui;
+  final variant = ui?.variant?.toLowerCase();
+  final hasCarouselUi =
+      variant == 'carousel' && ui?.groupId != null && ui?.groupItemId != null;
+
+  if (hasCarouselUi) {
+    final groupId = ui!.groupId!;
+    final draft = drafts.putIfAbsent(groupId, () {
+      order.add(groupId);
+      return _CarouselGroupDraft(id: groupId);
+    });
+    draft.applyUi(ui);
+    draft.addField(field, overrideUi: overrideUi);
+    return true;
+  }
+
+  if (overrideUi != null) {
+    return false;
+  }
+
+  final legacyMatch = profilePattern.firstMatch(field.id);
+  if (legacyMatch != null) {
+    final rawIndex = legacyMatch.group(1)!;
+    final numericIndex = int.tryParse(rawIndex);
+    final displayIndex =
+        (numericIndex != null && numericIndex > 0) ? '$numericIndex' : rawIndex;
+    final groupId = fallbackGroupId ?? 'profiles';
+    final groupLabel = fallbackGroupLabel ?? 'Profiles';
+    final itemLabel = fallbackItemLabel ?? 'Profile';
+    final itemIdPrefix = fallbackItemIdPrefix ?? 'profile';
+
+    final syntheticOptions = <String, dynamic>{
+      'itemLabel': itemLabel,
+      'pageIndex': numericIndex != null
+          ? numericIndex.toDouble()
+          : double.tryParse(rawIndex) ?? 0.0,
+    };
+
+    final previousTooltip =
+        fallbackPreviousTooltip ?? 'Previous ${itemLabel.toLowerCase()}';
+    final nextTooltip =
+        fallbackNextTooltip ?? 'Next ${itemLabel.toLowerCase()}';
+    syntheticOptions['previousTooltip'] = previousTooltip;
+    syntheticOptions['nextTooltip'] = nextTooltip;
+
+    final syntheticUi = InputFieldUiConfig(
+      variant: 'carousel',
+      groupId: groupId,
+      groupLabel: groupLabel,
+      groupItemId: '$itemIdPrefix$rawIndex',
+      groupItemLabel: '$itemLabel $displayIndex',
+      options: Map<String, dynamic>.unmodifiable(syntheticOptions),
+    );
+
+    return _registerCarouselField(
+      field: field,
+      drafts: drafts,
+      order: order,
+      profilePattern: profilePattern,
+      overrideUi: syntheticUi,
+    );
+  }
+
+  return false;
+}
+
 class _CarouselGroupDraft {
   _CarouselGroupDraft({required this.id});
 
@@ -856,68 +1367,36 @@ class _CarouselGroupDraft {
   final Map<String, _CarouselPageDraft> _pages = {};
   final List<_CarouselPageDraft> _orderedPages = [];
 
-  static String? _cleanString(dynamic value) {
-    if (value is String) {
-      final trimmed = value.trim();
-      return trimmed.isEmpty ? null : trimmed;
-    }
-    return null;
-  }
-
-  static bool? _parseBool(dynamic value) {
-    if (value is bool) return value;
-    if (value is String) {
-      final normalized = value.trim().toLowerCase();
-      if (normalized == 'true') return true;
-      if (normalized == 'false') return false;
-    }
-    return null;
-  }
-
-  static double? _parseDouble(dynamic value) {
-    if (value is num) {
-      final doubleValue = value.toDouble();
-      return doubleValue.isFinite ? doubleValue : null;
-    }
-    if (value is String) {
-      final parsed = double.tryParse(value.trim());
-      if (parsed != null && parsed.isFinite) {
-        return parsed;
-      }
-    }
-    return null;
-  }
-
   void applyUi(InputFieldUiConfig ui) {
     title = ui.groupLabel ?? title;
 
     final options = ui.options;
-    final labelOption = _cleanString(options['itemLabel']);
+    final labelOption = _cleanOptionString(options['itemLabel']);
     if (labelOption != null) {
       itemLabel = labelOption;
     }
 
-    final templateOption = _cleanString(options['pageTitleTemplate']);
+    final templateOption = _cleanOptionString(options['pageTitleTemplate']);
     if (templateOption != null) {
       pageTitleTemplate = templateOption;
     }
 
-    final indicatorOption = _parseBool(options['showPageIndicator']);
+    final indicatorOption = _parseOptionBool(options['showPageIndicator']);
     if (indicatorOption != null) {
       showPageIndicator = indicatorOption;
     }
 
-    final heightOption = _parseDouble(options['pageHeight']);
+    final heightOption = _parseOptionDouble(options['pageHeight']);
     if (heightOption != null) {
       pageHeight = heightOption;
     }
 
-    final prevTooltipOption = _cleanString(options['previousTooltip']);
+    final prevTooltipOption = _cleanOptionString(options['previousTooltip']);
     if (prevTooltipOption != null) {
       previousTooltip = prevTooltipOption;
     }
 
-    final nextTooltipOption = _cleanString(options['nextTooltip']);
+    final nextTooltipOption = _cleanOptionString(options['nextTooltip']);
     if (nextTooltipOption != null) {
       nextTooltip = nextTooltipOption;
     }
@@ -942,9 +1421,9 @@ class _CarouselGroupDraft {
       page.label = label.trim();
     }
 
-    final sortKey = _parseDouble(ui.options['order']) ??
-        _parseDouble(ui.options['pageIndex']) ??
-        _parseDouble(ui.options['sortKey']);
+    final sortKey = _parseOptionDouble(ui.options['order']) ??
+        _parseOptionDouble(ui.options['pageIndex']) ??
+        _parseOptionDouble(ui.options['sortKey']);
     if (sortKey != null) {
       page.sortKey = sortKey;
     } else if (page.sortKey == null) {
@@ -1083,6 +1562,546 @@ class _CarouselUiOptions {
   final double height;
   final String? previousTooltip;
   final String? nextTooltip;
+}
+
+class _CarouselState {
+  const _CarouselState({
+    required this.controller,
+    required this.currentIndex,
+  });
+
+  final PageController controller;
+  final int currentIndex;
+}
+
+class _WizardGroupDraft {
+  _WizardGroupDraft({required this.id, required this.insertionIndex});
+
+  final String id;
+  final int insertionIndex;
+  double? order;
+  String? title;
+  String? subtitle;
+  bool? showProgressIndicator;
+  String? previousLabel;
+  String? nextLabel;
+  String? doneLabel;
+
+  final Map<String, _WizardStepDraft> _steps = {};
+  final List<_WizardStepDraft> _orderedSteps = [];
+
+  void applyAssignment(_WizardAssignment assignment) {
+    final label = _cleanOptionString(assignment.groupLabel);
+    if (label != null && title == null) {
+      title = label;
+    }
+
+    final subtitleValue = _cleanOptionString(assignment.groupDescription);
+    if (subtitleValue != null && subtitle == null) {
+      subtitle = subtitleValue;
+    }
+
+    order ??= assignment.groupOrder;
+
+    final progress = assignment.showProgress;
+    if (progress != null && showProgressIndicator == null) {
+      showProgressIndicator = progress;
+    }
+
+    final prev = _cleanOptionString(assignment.previousLabel);
+    if (prev != null && previousLabel == null) {
+      previousLabel = prev;
+    }
+
+    final next = _cleanOptionString(assignment.nextLabel);
+    if (next != null && nextLabel == null) {
+      nextLabel = next;
+    }
+
+    final done = _cleanOptionString(assignment.doneLabel);
+    if (done != null && doneLabel == null) {
+      doneLabel = done;
+    }
+
+    final stepDraft = _steps.putIfAbsent(assignment.stepId, () {
+      final draft = _WizardStepDraft(
+        id: assignment.stepId,
+        insertionIndex: _orderedSteps.length,
+      );
+      _orderedSteps.add(draft);
+      return draft;
+    });
+
+    stepDraft.applyAssignment(assignment);
+  }
+
+  void addField(
+    InputField field, {
+    required _WizardAssignment assignment,
+    required RegExp profilePattern,
+  }) {
+    final stepDraft = _steps[assignment.stepId]!;
+    final handled = _registerCarouselField(
+      field: field,
+      drafts: stepDraft.carouselDrafts,
+      order: stepDraft.carouselOrder,
+      profilePattern: profilePattern,
+      fallbackGroupId: assignment.carouselGroupId,
+      fallbackGroupLabel:
+          assignment.carouselGroupLabel ?? assignment.stepLabel,
+      fallbackItemLabel: assignment.carouselItemLabel,
+      fallbackItemIdPrefix: assignment.carouselItemIdPrefix,
+      fallbackPreviousTooltip: assignment.carouselPreviousTooltip,
+      fallbackNextTooltip: assignment.carouselNextTooltip,
+    );
+
+    if (!handled) {
+      stepDraft.fields.add(field);
+    }
+  }
+
+  _WizardGroupData? build() {
+    final orderedSteps = List<_WizardStepDraft>.from(_orderedSteps)
+      ..sort((a, b) {
+        final ao = a.order;
+        final bo = b.order;
+        if (ao != null && bo != null && ao != bo) {
+          return ao.compareTo(bo);
+        }
+        if (ao != null && bo == null) {
+          return -1;
+        }
+        if (ao == null && bo != null) {
+          return 1;
+        }
+        return a.insertionIndex.compareTo(b.insertionIndex);
+      });
+
+    final builtSteps = <_WizardStepData>[];
+    for (final draft in orderedSteps) {
+      final step = draft.build();
+      if (step != null) {
+        builtSteps.add(step);
+      }
+    }
+
+    if (builtSteps.isEmpty) {
+      return null;
+    }
+
+    final options = _WizardGroupOptions(
+      showProgressIndicator: showProgressIndicator ?? true,
+      previousLabel: _cleanOptionString(previousLabel) ?? 'Back',
+      nextLabel: _cleanOptionString(nextLabel) ?? 'Next step',
+      doneLabel: _cleanOptionString(doneLabel) ?? 'Generate story',
+    );
+
+    return _WizardGroupData(
+      id: id,
+      insertionIndex: insertionIndex,
+      order: order,
+      title: title,
+      subtitle: subtitle,
+      options: options,
+      steps: List<_WizardStepData>.unmodifiable(builtSteps),
+    );
+  }
+}
+
+class _WizardStepDraft {
+  _WizardStepDraft({required this.id, required this.insertionIndex});
+
+  final String id;
+  final int insertionIndex;
+  double? order;
+  String? title;
+  String? description;
+  String? previousLabel;
+  String? nextLabel;
+  String? doneLabel;
+
+  final List<InputField> fields = [];
+  final Map<String, _CarouselGroupDraft> carouselDrafts = {};
+  final List<String> carouselOrder = [];
+
+  void applyAssignment(_WizardAssignment assignment) {
+    order ??= assignment.stepOrder;
+
+    final label = _cleanOptionString(assignment.stepLabel);
+    if (label != null && title == null) {
+      title = label;
+    }
+
+    final descriptionValue = _cleanOptionString(assignment.stepDescription);
+    if (descriptionValue != null && description == null) {
+      description = descriptionValue;
+    }
+
+    final prev = _cleanOptionString(assignment.stepPreviousLabel);
+    if (prev != null && previousLabel == null) {
+      previousLabel = prev;
+    }
+
+    final next = _cleanOptionString(assignment.stepNextLabel);
+    if (next != null && nextLabel == null) {
+      nextLabel = next;
+    }
+
+    final done = _cleanOptionString(assignment.stepDoneLabel);
+    if (done != null && doneLabel == null) {
+      doneLabel = done;
+    }
+  }
+
+  _WizardStepData? build() {
+    final carousels = <_CarouselGroupData>[];
+    for (final id in carouselOrder) {
+      final group = carouselDrafts[id]?.build();
+      if (group != null) {
+        carousels.add(group);
+      }
+    }
+
+    if (fields.isEmpty && carousels.isEmpty) {
+      return null;
+    }
+
+    return _WizardStepData(
+      id: id,
+      insertionIndex: insertionIndex,
+      order: order,
+      title: title,
+      description: description,
+      previousLabel: previousLabel,
+      nextLabel: nextLabel,
+      doneLabel: doneLabel,
+      fields: List<InputField>.unmodifiable(fields),
+      carousels: List<_CarouselGroupData>.unmodifiable(carousels),
+    );
+  }
+}
+
+class _WizardGroupData {
+  const _WizardGroupData({
+    required this.id,
+    required this.insertionIndex,
+    this.order,
+    this.title,
+    this.subtitle,
+    required this.options,
+    required this.steps,
+  });
+
+  final String id;
+  final int insertionIndex;
+  final double? order;
+  final String? title;
+  final String? subtitle;
+  final _WizardGroupOptions options;
+  final List<_WizardStepData> steps;
+}
+
+class _WizardStepData {
+  const _WizardStepData({
+    required this.id,
+    required this.insertionIndex,
+    this.order,
+    this.title,
+    this.description,
+    this.previousLabel,
+    this.nextLabel,
+    this.doneLabel,
+    required this.fields,
+    required this.carousels,
+  });
+
+  final String id;
+  final int insertionIndex;
+  final double? order;
+  final String? title;
+  final String? description;
+  final String? previousLabel;
+  final String? nextLabel;
+  final String? doneLabel;
+  final List<InputField> fields;
+  final List<_CarouselGroupData> carousels;
+}
+
+class _WizardGroupOptions {
+  const _WizardGroupOptions({
+    required this.showProgressIndicator,
+    required this.previousLabel,
+    required this.nextLabel,
+    required this.doneLabel,
+  });
+
+  final bool showProgressIndicator;
+  final String previousLabel;
+  final String nextLabel;
+  final String doneLabel;
+}
+
+class _WizardAssignment {
+  const _WizardAssignment({
+    required this.groupId,
+    required this.stepId,
+    this.groupLabel,
+    this.groupDescription,
+    this.groupOrder,
+    this.showProgress,
+    this.previousLabel,
+    this.nextLabel,
+    this.doneLabel,
+    this.stepLabel,
+    this.stepDescription,
+    this.stepOrder,
+    this.stepPreviousLabel,
+    this.stepNextLabel,
+    this.stepDoneLabel,
+    this.carouselGroupId,
+    this.carouselGroupLabel,
+    this.carouselItemLabel,
+    this.carouselItemIdPrefix,
+    this.carouselPreviousTooltip,
+    this.carouselNextTooltip,
+  });
+
+  final String groupId;
+  final String stepId;
+  final String? groupLabel;
+  final String? groupDescription;
+  final double? groupOrder;
+  final bool? showProgress;
+  final String? previousLabel;
+  final String? nextLabel;
+  final String? doneLabel;
+  final String? stepLabel;
+  final String? stepDescription;
+  final double? stepOrder;
+  final String? stepPreviousLabel;
+  final String? stepNextLabel;
+  final String? stepDoneLabel;
+  final String? carouselGroupId;
+  final String? carouselGroupLabel;
+  final String? carouselItemLabel;
+  final String? carouselItemIdPrefix;
+  final String? carouselPreviousTooltip;
+  final String? carouselNextTooltip;
+
+  static _WizardAssignment? fromUi(InputField field) {
+    final ui = field.ui;
+    if (ui == null) {
+      return null;
+    }
+
+    final options = ui.options;
+    Map<String, dynamic>? wizardMap;
+    final wizardOption = options['wizard'];
+    if (wizardOption is Map<String, dynamic>) {
+      wizardMap = wizardOption;
+    }
+
+    String? groupId = _cleanOptionString(options['wizardId']) ??
+        _cleanOptionString(options['wizard']) ??
+        _cleanOptionString(options['wizardGroup']) ??
+        _cleanOptionString(options['flow']) ??
+        _cleanOptionString(options['flowId']);
+    if (groupId == null && wizardMap != null) {
+      groupId = _cleanOptionString(wizardMap['id']) ??
+          _cleanOptionString(wizardMap['group']) ??
+          _cleanOptionString(wizardMap['groupId']) ??
+          _cleanOptionString(wizardMap['flow']);
+    }
+
+    String? stepId = _cleanOptionString(options['wizardStepId']) ??
+        _cleanOptionString(options['wizardStep']) ??
+        _cleanOptionString(options['step']) ??
+        _cleanOptionString(options['stepId']);
+    if (stepId == null && wizardMap != null) {
+      stepId = _cleanOptionString(wizardMap['step']) ??
+          _cleanOptionString(wizardMap['stepId']);
+    }
+
+    final variant = ui.variant?.toLowerCase();
+    if (variant == 'wizard') {
+      groupId ??= _cleanOptionString(ui.groupId);
+      stepId ??= _cleanOptionString(ui.groupItemId);
+    }
+
+    if (groupId == null || stepId == null) {
+      return null;
+    }
+
+    String? groupLabel = _cleanOptionString(options['wizardLabel']) ??
+        _cleanOptionString(options['wizardTitle']) ??
+        _cleanOptionString(options['flowLabel']);
+    if (groupLabel == null && wizardMap != null) {
+      groupLabel = _cleanOptionString(wizardMap['label']) ??
+          _cleanOptionString(wizardMap['title']);
+    }
+    if (groupLabel == null && variant == 'wizard') {
+      groupLabel = _cleanOptionString(ui.groupLabel);
+    }
+
+    String? groupDescription =
+        _cleanOptionString(options['wizardDescription']) ??
+            _cleanOptionString(options['wizardSubtitle']);
+    if (groupDescription == null && wizardMap != null) {
+      groupDescription = _cleanOptionString(wizardMap['description']) ??
+          _cleanOptionString(wizardMap['subtitle']);
+    }
+
+    final dynamic wizardOrderValue =
+        wizardMap != null ? wizardMap['order'] : null;
+    final dynamic wizardShowProgressValue =
+        wizardMap != null ? wizardMap['showProgress'] : null;
+    final dynamic wizardPrevValue =
+        wizardMap != null ? wizardMap['previousLabel'] : null;
+    final dynamic wizardNextValue =
+        wizardMap != null ? wizardMap['nextLabel'] : null;
+    final dynamic wizardDoneValue =
+        wizardMap != null ? wizardMap['doneLabel'] : null;
+    final dynamic wizardStepLabelValue =
+        wizardMap != null ? wizardMap['stepLabel'] : null;
+    final dynamic wizardStepTitleValue =
+        wizardMap != null ? wizardMap['stepTitle'] : null;
+    final dynamic wizardStepDescriptionValue =
+        wizardMap != null ? wizardMap['stepDescription'] : null;
+    final dynamic wizardStepOrderValue =
+        wizardMap != null ? wizardMap['stepOrder'] : null;
+    final dynamic wizardStepPrevValue =
+        wizardMap != null ? wizardMap['stepPreviousLabel'] : null;
+    final dynamic wizardStepNextValue =
+        wizardMap != null ? wizardMap['stepNextLabel'] : null;
+    final dynamic wizardStepDoneValue =
+        wizardMap != null ? wizardMap['stepDoneLabel'] : null;
+    final dynamic wizardCarouselIdValue =
+        wizardMap != null ? wizardMap['carouselId'] : null;
+    final dynamic wizardCarouselLabelValue =
+        wizardMap != null ? wizardMap['carouselLabel'] : null;
+    final dynamic wizardCarouselItemLabelValue =
+        wizardMap != null ? wizardMap['carouselItemLabel'] : null;
+    final dynamic wizardCarouselPrefixValue =
+        wizardMap != null ? wizardMap['carouselItemPrefix'] : null;
+    final dynamic wizardCarouselPrevTooltipValue =
+        wizardMap != null ? wizardMap['carouselPreviousTooltip'] : null;
+    final dynamic wizardCarouselNextTooltipValue =
+        wizardMap != null ? wizardMap['carouselNextTooltip'] : null;
+
+    final groupOrder = _parseOptionDouble(
+      options['wizardOrder'] ?? options['flowOrder'] ?? wizardOrderValue,
+    );
+    final showProgress = _parseOptionBool(
+      options['wizardShowProgress'] ??
+          wizardShowProgressValue ??
+          options['showProgress'],
+    );
+    final previousLabel = _cleanOptionString(
+      options['wizardBackLabel'] ??
+          options['wizardPreviousLabel'] ??
+          options['previousLabel'] ??
+          wizardPrevValue,
+    );
+    final nextLabel = _cleanOptionString(
+      options['wizardNextLabel'] ?? options['nextLabel'] ?? wizardNextValue,
+    );
+    final doneLabel = _cleanOptionString(
+      options['wizardDoneLabel'] ?? options['doneLabel'] ?? wizardDoneValue,
+    );
+
+    String? stepLabel = _cleanOptionString(
+      options['wizardStepLabel'] ??
+          options['wizardStepTitle'] ??
+          options['stepLabel'] ??
+          wizardStepLabelValue ??
+          wizardStepTitleValue,
+    );
+    if (stepLabel == null) {
+      stepLabel = _cleanOptionString(ui.groupItemLabel);
+    }
+
+    final stepDescription = _cleanOptionString(
+      options['wizardStepDescription'] ??
+          options['stepDescription'] ??
+          wizardStepDescriptionValue,
+    );
+
+    final stepOrder = _parseOptionDouble(
+      options['wizardStepOrder'] ??
+          options['stepOrder'] ??
+          wizardStepOrderValue,
+    );
+    final stepPreviousLabel = _cleanOptionString(
+      options['wizardStepBackLabel'] ??
+          options['stepPreviousLabel'] ??
+          wizardStepPrevValue,
+    );
+    final stepNextLabel = _cleanOptionString(
+      options['wizardStepNextLabel'] ??
+          options['stepNextLabel'] ??
+          wizardStepNextValue,
+    );
+    final stepDoneLabel = _cleanOptionString(
+      options['wizardStepDoneLabel'] ??
+          options['stepDoneLabel'] ??
+          wizardStepDoneValue,
+    );
+
+    final carouselGroupId = _cleanOptionString(
+      options['wizardCarouselId'] ??
+          options['carouselGroupId'] ??
+          wizardCarouselIdValue,
+    );
+    final carouselGroupLabel = _cleanOptionString(
+      options['wizardCarouselLabel'] ??
+          options['carouselGroupLabel'] ??
+          wizardCarouselLabelValue,
+    );
+    final carouselItemLabel = _cleanOptionString(
+      options['wizardCarouselItemLabel'] ??
+          options['carouselItemLabel'] ??
+          wizardCarouselItemLabelValue,
+    );
+    final carouselItemIdPrefix = _cleanOptionString(
+      options['wizardCarouselItemPrefix'] ??
+          options['carouselItemPrefix'] ??
+          wizardCarouselPrefixValue,
+    );
+    final carouselPreviousTooltip = _cleanOptionString(
+      options['wizardCarouselPreviousTooltip'] ??
+          options['carouselPreviousTooltip'] ??
+          wizardCarouselPrevTooltipValue,
+    );
+    final carouselNextTooltip = _cleanOptionString(
+      options['wizardCarouselNextTooltip'] ??
+          options['carouselNextTooltip'] ??
+          wizardCarouselNextTooltipValue,
+    );
+
+    return _WizardAssignment(
+      groupId: groupId,
+      stepId: stepId,
+      groupLabel: groupLabel,
+      groupDescription: groupDescription,
+      groupOrder: groupOrder,
+      showProgress: showProgress,
+      previousLabel: previousLabel,
+      nextLabel: nextLabel,
+      doneLabel: doneLabel,
+      stepLabel: stepLabel,
+      stepDescription: stepDescription,
+      stepOrder: stepOrder,
+      stepPreviousLabel: stepPreviousLabel,
+      stepNextLabel: stepNextLabel,
+      stepDoneLabel: stepDoneLabel,
+      carouselGroupId: carouselGroupId,
+      carouselGroupLabel: carouselGroupLabel,
+      carouselItemLabel: carouselItemLabel,
+      carouselItemIdPrefix: carouselItemIdPrefix,
+      carouselPreviousTooltip: carouselPreviousTooltip,
+      carouselNextTooltip: carouselNextTooltip,
+    );
+  }
 }
 
 class _InputCarousel extends StatefulWidget {
