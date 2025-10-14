@@ -17,7 +17,6 @@
     }
   },
   "homeHeroSubtitle": "Curated AI tools to elevate your workflow.",
-  "premiumHighlights": "Premium highlights",
   "homeToolCount": "Explore {count} handpicked tools.",
   "@homeToolCount": {
     "placeholders": {
@@ -26,7 +25,6 @@
       }
     }
   },
-  "favoritesCta": "Tap the heart on any tool to curate your favorites.",
   "tags": "Tags",
   "clearTagFilters": "Clear tag filters",
   "noToolsFoundTitle": "No tools found",
@@ -118,5 +116,5 @@
     }
   },
   "toolImageResultSummary": "Here is your stylized artwork, ready to save or share.",
-  "toolResultSingleImageRange": "Single image"
+  "toolResultSingleImageRange": "Single creative session"
 }

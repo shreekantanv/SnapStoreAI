@@ -104,6 +104,9 @@ class _PremiumSuccess extends StatelessWidget {
     final hasSummary = (result.summary?.trim().isNotEmpty ?? false);
     final hasHeroImage =
         result.subjectImageBytes != null || (result.subjectImage?.isNotEmpty ?? false);
+    final isImageTool = tool.runtime == ToolRuntime.imageStylization;
+    final shareMessage =
+        isImageTool ? 'Share coming soon' : 'Story sharing coming soon';
 
     final content = <Widget>[];
 
@@ -171,7 +174,8 @@ class _PremiumSuccess extends StatelessWidget {
     content
       ..add(
         _PrimaryActions(
-          onShareImage: () => _toast(context, 'Share coming soon'),
+          isImageTool: isImageTool,
+          onSharePrimary: () => _toast(context, shareMessage),
           onExportJson: () => _toast(context, 'Export coming soon'),
           onRerun: () => Navigator.of(context).pop(),
         ),
@@ -453,27 +457,33 @@ class _SummarySection extends StatelessWidget {
 }
 
 class _PrimaryActions extends StatelessWidget {
-  final VoidCallback onShareImage;
+  final bool isImageTool;
+  final VoidCallback onSharePrimary;
   final VoidCallback onExportJson;
   final VoidCallback onRerun;
 
   const _PrimaryActions({
-    required this.onShareImage,
+    required this.isImageTool,
+    required this.onSharePrimary,
     required this.onExportJson,
     required this.onRerun,
   });
 
   @override
   Widget build(BuildContext context) {
+    final shareIcon =
+        isImageTool ? Icons.image_outlined : Icons.menu_book_outlined;
+    final shareLabel = isImageTool ? 'Share Image' : 'Share Story';
+
     return Column(
       children: [
         // Primary CTA
         SizedBox(
           width: double.infinity,
           child: FilledButton.icon(
-            icon: const Icon(Icons.image_outlined),
-            label: const Text('Share Image'),
-            onPressed: onShareImage,
+            icon: Icon(shareIcon),
+            label: Text(shareLabel),
+            onPressed: onSharePrimary,
           ),
         ),
         const SizedBox(height: 10),
