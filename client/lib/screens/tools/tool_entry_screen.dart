@@ -36,6 +36,8 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   final _inputValues = <String, ToolInputValue>{};
   late final http.Client _httpClient;
   bool _isLoading = false;
+  PageController? _profilePageController;
+  int _currentProfileIndex = 0;
 
   @override
   void initState() {
@@ -46,6 +48,7 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   @override
   void dispose() {
     _httpClient.close();
+    _profilePageController?.dispose();
     super.dispose();
   }
 
@@ -605,28 +608,100 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                   ],
 
                   // --- Input Fields ---
-                  _SectionCard(
-                    title: 'Input Fields',
-                    child: Column(
-                      children: [
-                        for (final field in widget.tool.inputFields) ...[
-                          DynamicInputWidget(
-                            field: field,
-                            initialValue: _inputValues[field.id],
-                            onChanged: (value) {
-                              setState(() {
-                                if (value.isEmpty) {
-                                  _inputValues.remove(field.id);
-                                } else {
-                                  _inputValues[field.id] = value;
-                                }
-                              });
-                            },
+                  Builder(
+                    builder: (context) {
+                      final profileGroups = <String, List<InputField>>{};
+                      final profileOrder = <String>[];
+                      final otherFields = <InputField>[];
+
+                      final profilePattern = RegExp(r'^profile(\d+)_');
+                      for (final field in widget.tool.inputFields) {
+                        final match = profilePattern.firstMatch(field.id);
+                        if (match == null) {
+                          otherFields.add(field);
+                          continue;
+                        }
+
+                        final profileKey = 'profile${match.group(1)!}';
+                        profileGroups.putIfAbsent(profileKey, () {
+                          profileOrder.add(profileKey);
+                          return <InputField>[];
+                        });
+                        profileGroups[profileKey]!.add(field);
+                      }
+
+                      final sortedProfileOrder = List<String>.from(profileOrder)
+                        ..sort((a, b) {
+                          final aIndex =
+                              int.tryParse(a.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+                          final bIndex =
+                              int.tryParse(b.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
+                          return aIndex.compareTo(bIndex);
+                        });
+
+                      final maxIndex = sortedProfileOrder.length - 1;
+                      if (_currentProfileIndex > maxIndex && maxIndex >= 0) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          setState(() {
+                            _currentProfileIndex = maxIndex;
+                          });
+                          if (_profilePageController?.hasClients ?? false) {
+                            _profilePageController!.jumpToPage(_currentProfileIndex);
+                          }
+                        });
+                      }
+
+                      Widget buildOtherFields() {
+                        return Column(
+                          children: [
+                            for (final field in otherFields) ...[
+                              _buildInputField(field),
+                              const SizedBox(height: 12),
+                            ],
+                          ],
+                        );
+                      }
+
+                      if (profileGroups.isEmpty) {
+                        return _SectionCard(
+                          title: 'Input Fields',
+                          child: buildOtherFields(),
+                        );
+                      }
+
+                      _profilePageController ??=
+                          PageController(initialPage: _currentProfileIndex);
+                      final pageController = _profilePageController!;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (otherFields.isNotEmpty) ...[
+                            _SectionCard(
+                              title: 'Input Fields',
+                              child: buildOtherFields(),
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                          _SectionCard(
+                            title: 'Profiles',
+                            child: _ProfileCarousel(
+                              controller: pageController,
+                              currentIndex: _currentProfileIndex,
+                              onIndexChanged: (index) {
+                                setState(() {
+                                  _currentProfileIndex = index;
+                                });
+                              },
+                              profileOrder: sortedProfileOrder,
+                              profileGroups: profileGroups,
+                              buildField: _buildInputField,
+                            ),
                           ),
-                          const SizedBox(height: 12),
                         ],
-                      ],
-                    ),
+                      );
+                    },
                   ),
 
                   const SizedBox(height: 18),
@@ -659,6 +734,183 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildInputField(InputField field) {
+    return DynamicInputWidget(
+      field: field,
+      initialValue: _inputValues[field.id],
+      onChanged: (value) {
+        setState(() {
+          if (value.isEmpty) {
+            _inputValues.remove(field.id);
+          } else {
+            _inputValues[field.id] = value;
+          }
+        });
+      },
+    );
+  }
+}
+
+class _ProfileCarousel extends StatefulWidget {
+  final PageController controller;
+  final int currentIndex;
+  final ValueChanged<int> onIndexChanged;
+  final List<String> profileOrder;
+  final Map<String, List<InputField>> profileGroups;
+  final Widget Function(InputField field) buildField;
+
+  const _ProfileCarousel({
+    required this.controller,
+    required this.currentIndex,
+    required this.onIndexChanged,
+    required this.profileOrder,
+    required this.profileGroups,
+    required this.buildField,
+  });
+
+  @override
+  State<_ProfileCarousel> createState() => _ProfileCarouselState();
+}
+
+class _ProfileCarouselState extends State<_ProfileCarousel> {
+  late int _activeIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _activeIndex = widget.profileOrder.isEmpty
+        ? 0
+        : widget.currentIndex.clamp(0, widget.profileOrder.length - 1);
+    widget.controller.addListener(_handlePageChange);
+  }
+
+  @override
+  void didUpdateWidget(covariant _ProfileCarousel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handlePageChange);
+      widget.controller.addListener(_handlePageChange);
+    }
+
+    if (widget.currentIndex != _activeIndex &&
+        widget.currentIndex >= 0 &&
+        widget.currentIndex < widget.profileOrder.length) {
+      setState(() {
+        _activeIndex = widget.currentIndex;
+      });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        widget.controller.jumpToPage(widget.currentIndex);
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handlePageChange);
+    super.dispose();
+  }
+
+  void _handlePageChange() {
+    final page = widget.controller.page;
+    if (page == null) return;
+    final rounded = page.round();
+    if (rounded == _activeIndex) {
+      return;
+    }
+    setState(() {
+      _activeIndex = rounded;
+    });
+    widget.onIndexChanged(rounded);
+  }
+
+  void _goTo(int delta) {
+    final target = (_activeIndex + delta).clamp(0, widget.profileOrder.length - 1);
+    if (target == _activeIndex) return;
+    widget.controller.animateToPage(
+      target,
+      duration: const Duration(milliseconds: 260),
+      curve: Curves.easeInOut,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tt = Theme.of(context).textTheme;
+    final cs = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Profile ${_activeIndex + 1} of ${widget.profileOrder.length}',
+              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
+              onPressed: _activeIndex > 0 ? () => _goTo(-1) : null,
+              tooltip: 'Previous profile',
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
+              onPressed:
+                  _activeIndex < widget.profileOrder.length - 1 ? () => _goTo(1) : null,
+              tooltip: 'Next profile',
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          height: 420,
+          child: PageView.builder(
+            controller: widget.controller,
+            physics: const BouncingScrollPhysics(),
+            itemCount: widget.profileOrder.length,
+            itemBuilder: (context, index) {
+              final profileKey = widget.profileOrder[index];
+              final fields = widget.profileGroups[profileKey] ?? const <InputField>[];
+              return SingleChildScrollView(
+                padding: const EdgeInsets.only(right: 4),
+                child: Column(
+                  children: [
+                    for (int i = 0; i < fields.length; i++) ...[
+                      widget.buildField(fields[i]),
+                      if (i != fields.length - 1) const SizedBox(height: 12),
+                    ],
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var i = 0; i < widget.profileOrder.length; i++) ...[
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 220),
+                margin: const EdgeInsets.symmetric(horizontal: 4),
+                height: 8,
+                width: i == _activeIndex ? 20 : 8,
+                decoration: BoxDecoration(
+                  color: i == _activeIndex
+                      ? cs.primary
+                      : cs.onSurface.withOpacity(0.28),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ],
     );
   }
 }
