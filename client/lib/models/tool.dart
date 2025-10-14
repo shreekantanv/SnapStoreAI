@@ -36,20 +36,74 @@ class InputField {
   final String type;
   final String label;
   final String hint;
+  final InputFieldUiConfig? ui;
 
   InputField({
     required this.id,
     required this.type,
     required this.label,
     required this.hint,
+    this.ui,
   });
 
   factory InputField.fromJson(Map<String, dynamic> json) {
+    final uiJson = json['ui'];
     return InputField(
       id: json['id'] as String,
       type: json['type'] as String,
       label: json['label'] as String,
       hint: json['hint'] as String,
+      ui: uiJson is Map<String, dynamic>
+          ? InputFieldUiConfig.fromJson(uiJson)
+          : null,
+    );
+  }
+}
+
+class InputFieldUiConfig {
+  final String? variant;
+  final String? groupId;
+  final String? groupLabel;
+  final String? groupItemId;
+  final String? groupItemLabel;
+  final Map<String, dynamic> options;
+
+  const InputFieldUiConfig({
+    this.variant,
+    this.groupId,
+    this.groupLabel,
+    this.groupItemId,
+    this.groupItemLabel,
+    this.options = const {},
+  });
+
+  factory InputFieldUiConfig.fromJson(Map<String, dynamic> json) {
+    String? _string(dynamic value) {
+      if (value is String) {
+        final trimmed = value.trim();
+        return trimmed.isEmpty ? null : trimmed;
+      }
+      return null;
+    }
+
+    Map<String, dynamic> _readOptions(dynamic value) {
+      if (value is Map<String, dynamic>) {
+        return Map<String, dynamic>.unmodifiable(value);
+      }
+      return const {};
+    }
+
+    return InputFieldUiConfig(
+      variant: _string(json['variant']) ?? _string(json['type']),
+      groupId:
+          _string(json['group']) ?? _string(json['groupId']) ?? _string(json['section']),
+      groupLabel:
+          _string(json['groupLabel']) ?? _string(json['sectionLabel']),
+      groupItemId:
+          _string(json['groupItem']) ?? _string(json['item']) ?? _string(json['page']),
+      groupItemLabel: _string(json['groupItemLabel']) ?? _string(json['itemLabel'])
+          ?? _string(json['pageLabel']),
+      options: _readOptions(json['options']),
     );
   }
 }

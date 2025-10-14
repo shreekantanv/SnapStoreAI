@@ -36,8 +36,8 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   final _inputValues = <String, ToolInputValue>{};
   late final http.Client _httpClient;
   bool _isLoading = false;
-  PageController? _profilePageController;
-  int _currentProfileIndex = 0;
+  final Map<String, PageController> _carouselControllers = {};
+  final Map<String, int> _carouselIndices = {};
 
   @override
   void initState() {
@@ -48,7 +48,9 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   @override
   void dispose() {
     _httpClient.close();
-    _profilePageController?.dispose();
+    for (final controller in _carouselControllers.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
 
@@ -610,47 +612,78 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                   // --- Input Fields ---
                   Builder(
                     builder: (context) {
-                      final profileGroups = <String, List<InputField>>{};
-                      final profileOrder = <String>[];
                       final otherFields = <InputField>[];
-
+                      final groupDrafts = <String, _CarouselGroupDraft>{};
+                      final groupOrder = <String>[];
                       final profilePattern = RegExp(r'^profile(\d+)_');
+
                       for (final field in widget.tool.inputFields) {
-                        final match = profilePattern.firstMatch(field.id);
-                        if (match == null) {
+                        final ui = field.ui;
+                        final variant = ui?.variant?.toLowerCase();
+                        final hasCarouselUi =
+                            variant == 'carousel' && ui?.groupId != null && ui?.groupItemId != null;
+
+                        if (!hasCarouselUi) {
+                          final legacyMatch = profilePattern.firstMatch(field.id);
+                          if (legacyMatch != null) {
+                            final rawIndex = legacyMatch.group(1)!;
+                            final numericIndex = int.tryParse(rawIndex);
+                            final displayIndex =
+                                (numericIndex != null && numericIndex > 0)
+                                    ? '$numericIndex'
+                                    : rawIndex;
+                            final pageIndexValue = numericIndex != null
+                                ? numericIndex.toDouble()
+                                : double.tryParse(rawIndex) ?? 0.0;
+                            final syntheticOptions = <String, dynamic>{
+                              'itemLabel': 'Profile',
+                              'pageIndex': pageIndexValue,
+                              'previousTooltip': 'Previous profile',
+                              'nextTooltip': 'Next profile',
+                            };
+                            final syntheticUi = InputFieldUiConfig(
+                              variant: 'carousel',
+                              groupId: 'profiles',
+                              groupLabel: 'Profiles',
+                              groupItemId: 'profile$rawIndex',
+                              groupItemLabel: 'Profile $displayIndex',
+                              options: Map<String, dynamic>.unmodifiable(syntheticOptions),
+                            );
+                            final draft = groupDrafts.putIfAbsent(
+                              syntheticUi.groupId!,
+                              () {
+                                groupOrder.add(syntheticUi.groupId!);
+                                return _CarouselGroupDraft(id: syntheticUi.groupId!);
+                              },
+                            );
+                            draft.applyUi(syntheticUi);
+                            draft.addField(field, overrideUi: syntheticUi);
+                            continue;
+                          }
+
                           otherFields.add(field);
                           continue;
                         }
 
-                        final profileKey = 'profile${match.group(1)!}';
-                        profileGroups.putIfAbsent(profileKey, () {
-                          profileOrder.add(profileKey);
-                          return <InputField>[];
+                        final groupId = ui!.groupId!;
+                        final draft = groupDrafts.putIfAbsent(groupId, () {
+                          groupOrder.add(groupId);
+                          return _CarouselGroupDraft(id: groupId);
                         });
-                        profileGroups[profileKey]!.add(field);
+                        draft.applyUi(ui);
+                        draft.addField(field);
                       }
 
-                      final sortedProfileOrder = List<String>.from(profileOrder)
-                        ..sort((a, b) {
-                          final aIndex =
-                              int.tryParse(a.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-                          final bIndex =
-                              int.tryParse(b.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0;
-                          return aIndex.compareTo(bIndex);
-                        });
-
-                      final maxIndex = sortedProfileOrder.length - 1;
-                      if (_currentProfileIndex > maxIndex && maxIndex >= 0) {
-                        WidgetsBinding.instance.addPostFrameCallback((_) {
-                          if (!mounted) return;
-                          setState(() {
-                            _currentProfileIndex = maxIndex;
-                          });
-                          if (_profilePageController?.hasClients ?? false) {
-                            _profilePageController!.jumpToPage(_currentProfileIndex);
-                          }
-                        });
+                      final carouselGroups = <_CarouselGroupData>[];
+                      for (final id in groupOrder) {
+                        final group = groupDrafts[id]?.build();
+                        if (group != null) {
+                          carouselGroups.add(group);
+                        }
                       }
+
+                      _syncCarouselControllers(
+                          carouselGroups.map((group) => group.id).toSet());
 
                       Widget buildOtherFields() {
                         return Column(
@@ -663,43 +696,88 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
                         );
                       }
 
-                      if (profileGroups.isEmpty) {
+                      if (carouselGroups.isEmpty) {
                         return _SectionCard(
                           title: 'Input Fields',
                           child: buildOtherFields(),
                         );
                       }
 
-                      _profilePageController ??=
-                          PageController(initialPage: _currentProfileIndex);
-                      final pageController = _profilePageController!;
+                      final inputSections = <Widget>[];
 
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (otherFields.isNotEmpty) ...[
+                      if (otherFields.isNotEmpty) {
+                        inputSections
+                          ..add(
                             _SectionCard(
                               title: 'Input Fields',
                               child: buildOtherFields(),
                             ),
-                            const SizedBox(height: 16),
-                          ],
+                          )
+                          ..add(const SizedBox(height: 16));
+                      }
+
+                      for (var i = 0; i < carouselGroups.length; i++) {
+                        final group = carouselGroups[i];
+                        final pageCount = group.pages.length;
+                        if (pageCount == 0) {
+                          continue;
+                        }
+
+                        final previousIndex = _carouselIndices[group.id];
+                        final clampedIndex =
+                            (previousIndex ?? 0).clamp(0, pageCount - 1);
+                        final existingController = _carouselControllers[group.id];
+
+                        if (existingController == null) {
+                          _carouselControllers[group.id] =
+                              PageController(initialPage: clampedIndex);
+                        } else if (previousIndex != null &&
+                            clampedIndex != previousIndex) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (!mounted) return;
+                            final controller = _carouselControllers[group.id];
+                            if (controller != null && controller.hasClients) {
+                              controller.jumpToPage(clampedIndex);
+                            }
+                          });
+                        }
+
+                        _carouselIndices[group.id] = clampedIndex;
+                        final controller = _carouselControllers[group.id]!;
+
+                        inputSections.add(
                           _SectionCard(
-                            title: 'Profiles',
-                            child: _ProfileCarousel(
-                              controller: pageController,
-                              currentIndex: _currentProfileIndex,
+                            title: group.title ?? 'Inputs',
+                            child: _InputCarousel(
+                              controller: controller,
+                              currentIndex: clampedIndex,
                               onIndexChanged: (index) {
                                 setState(() {
-                                  _currentProfileIndex = index;
+                                  _carouselIndices[group.id] = index;
                                 });
                               },
-                              profileOrder: sortedProfileOrder,
-                              profileGroups: profileGroups,
+                              options: group.options,
+                              pages: group.pages,
                               buildField: _buildInputField,
                             ),
                           ),
-                        ],
+                        );
+
+                        if (i != carouselGroups.length - 1) {
+                          inputSections.add(const SizedBox(height: 16));
+                        }
+                      }
+
+                      if (inputSections.isEmpty) {
+                        return _SectionCard(
+                          title: 'Input Fields',
+                          child: buildOtherFields(),
+                        );
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: inputSections,
                       );
                     },
                   ),
@@ -737,6 +815,16 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
     );
   }
 
+  void _syncCarouselControllers(Set<String> activeGroupIds) {
+    final keysToRemove = _carouselControllers.keys
+        .where((key) => !activeGroupIds.contains(key))
+        .toList(growable: false);
+    for (final key in keysToRemove) {
+      _carouselControllers.remove(key)?.dispose();
+      _carouselIndices.remove(key);
+    }
+  }
+
   Widget _buildInputField(InputField field) {
     return DynamicInputWidget(
       field: field,
@@ -754,56 +842,302 @@ class _ToolEntryScreenState extends State<ToolEntryScreen> {
   }
 }
 
-class _ProfileCarousel extends StatefulWidget {
+class _CarouselGroupDraft {
+  _CarouselGroupDraft({required this.id});
+
+  final String id;
+  String? title;
+  String? itemLabel;
+  String? pageTitleTemplate;
+  bool? showPageIndicator;
+  double? pageHeight;
+  String? previousTooltip;
+  String? nextTooltip;
+  final Map<String, _CarouselPageDraft> _pages = {};
+  final List<_CarouselPageDraft> _orderedPages = [];
+
+  static String? _cleanString(dynamic value) {
+    if (value is String) {
+      final trimmed = value.trim();
+      return trimmed.isEmpty ? null : trimmed;
+    }
+    return null;
+  }
+
+  static bool? _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is String) {
+      final normalized = value.trim().toLowerCase();
+      if (normalized == 'true') return true;
+      if (normalized == 'false') return false;
+    }
+    return null;
+  }
+
+  static double? _parseDouble(dynamic value) {
+    if (value is num) {
+      final doubleValue = value.toDouble();
+      return doubleValue.isFinite ? doubleValue : null;
+    }
+    if (value is String) {
+      final parsed = double.tryParse(value.trim());
+      if (parsed != null && parsed.isFinite) {
+        return parsed;
+      }
+    }
+    return null;
+  }
+
+  void applyUi(InputFieldUiConfig ui) {
+    title = ui.groupLabel ?? title;
+
+    final options = ui.options;
+    final labelOption = _cleanString(options['itemLabel']);
+    if (labelOption != null) {
+      itemLabel = labelOption;
+    }
+
+    final templateOption = _cleanString(options['pageTitleTemplate']);
+    if (templateOption != null) {
+      pageTitleTemplate = templateOption;
+    }
+
+    final indicatorOption = _parseBool(options['showPageIndicator']);
+    if (indicatorOption != null) {
+      showPageIndicator = indicatorOption;
+    }
+
+    final heightOption = _parseDouble(options['pageHeight']);
+    if (heightOption != null) {
+      pageHeight = heightOption;
+    }
+
+    final prevTooltipOption = _cleanString(options['previousTooltip']);
+    if (prevTooltipOption != null) {
+      previousTooltip = prevTooltipOption;
+    }
+
+    final nextTooltipOption = _cleanString(options['nextTooltip']);
+    if (nextTooltipOption != null) {
+      nextTooltip = nextTooltipOption;
+    }
+  }
+
+  void addField(InputField field, {InputFieldUiConfig? overrideUi}) {
+    final ui = overrideUi ?? field.ui;
+    if (ui == null || ui.groupItemId == null) {
+      return;
+    }
+
+    final pageId = ui.groupItemId!;
+    final page = _pages.putIfAbsent(pageId, () {
+      final draft =
+          _CarouselPageDraft(id: pageId, insertionIndex: _orderedPages.length);
+      _orderedPages.add(draft);
+      return draft;
+    });
+
+    final label = ui.groupItemLabel;
+    if (label != null && label.trim().isNotEmpty) {
+      page.label = label.trim();
+    }
+
+    final sortKey = _parseDouble(ui.options['order']) ??
+        _parseDouble(ui.options['pageIndex']) ??
+        _parseDouble(ui.options['sortKey']);
+    if (sortKey != null) {
+      page.sortKey = sortKey;
+    } else if (page.sortKey == null) {
+      final numericMatch = RegExp(r'\d+').firstMatch(pageId);
+      if (numericMatch != null) {
+        final numeric = double.tryParse(numericMatch.group(0)!);
+        if (numeric != null) {
+          page.sortKey = numeric;
+        }
+      }
+    }
+
+    page.fields.add(field);
+  }
+
+  _CarouselGroupData? build() {
+    final orderedDrafts = List<_CarouselPageDraft>.from(_orderedPages)
+      ..sort((a, b) {
+        final ak = a.sortKey;
+        final bk = b.sortKey;
+        if (ak != null && bk != null && ak != bk) {
+          return ak.compareTo(bk);
+        }
+        if (ak != null && bk == null) {
+          return -1;
+        }
+        if (ak == null && bk != null) {
+          return 1;
+        }
+        return a.insertionIndex.compareTo(b.insertionIndex);
+      });
+
+    final pages = <_CarouselPage>[];
+    for (final draft in orderedDrafts) {
+      if (draft.fields.isEmpty) continue;
+      pages.add(
+        _CarouselPage(
+          id: draft.id,
+          label: draft.label,
+          fields: List<InputField>.unmodifiable(draft.fields),
+        ),
+      );
+    }
+
+    if (pages.isEmpty) {
+      return null;
+    }
+
+    String? resolvedLabel = itemLabel;
+    if ((resolvedLabel == null || resolvedLabel.trim().isEmpty) &&
+        title != null && title!.trim().isNotEmpty) {
+      final trimmed = title!.trim();
+      if (trimmed.length > 1 && trimmed.endsWith('s')) {
+        resolvedLabel = trimmed.substring(0, trimmed.length - 1);
+      } else {
+        resolvedLabel = trimmed;
+      }
+    }
+
+    final resolvedItemLabel =
+        (resolvedLabel != null && resolvedLabel.trim().isNotEmpty)
+            ? resolvedLabel.trim()
+            : 'Item';
+
+    final double baseHeight = pageHeight ?? 420;
+    final resolvedHeight =
+        baseHeight.isFinite && baseHeight > 120 ? baseHeight : 420;
+
+    return _CarouselGroupData(
+      id: id,
+      title: title,
+      options: _CarouselUiOptions(
+        itemLabel: resolvedItemLabel,
+        pageTitleTemplate: pageTitleTemplate?.trim().isEmpty ?? true
+            ? null
+            : pageTitleTemplate!.trim(),
+        showPageIndicator: showPageIndicator ?? true,
+        height: resolvedHeight,
+        previousTooltip: previousTooltip,
+        nextTooltip: nextTooltip,
+      ),
+      pages: List<_CarouselPage>.unmodifiable(pages),
+    );
+  }
+}
+
+class _CarouselPageDraft {
+  _CarouselPageDraft({required this.id, required this.insertionIndex});
+
+  final String id;
+  final int insertionIndex;
+  String? label;
+  double? sortKey;
+  final List<InputField> fields = [];
+}
+
+class _CarouselGroupData {
+  const _CarouselGroupData({
+    required this.id,
+    this.title,
+    required this.options,
+    required this.pages,
+  });
+
+  final String id;
+  final String? title;
+  final _CarouselUiOptions options;
+  final List<_CarouselPage> pages;
+}
+
+class _CarouselPage {
+  const _CarouselPage({
+    required this.id,
+    this.label,
+    required this.fields,
+  });
+
+  final String id;
+  final String? label;
+  final List<InputField> fields;
+}
+
+class _CarouselUiOptions {
+  const _CarouselUiOptions({
+    required this.itemLabel,
+    this.pageTitleTemplate,
+    required this.showPageIndicator,
+    required this.height,
+    this.previousTooltip,
+    this.nextTooltip,
+  }) : assert(height > 0);
+
+  final String itemLabel;
+  final String? pageTitleTemplate;
+  final bool showPageIndicator;
+  final double height;
+  final String? previousTooltip;
+  final String? nextTooltip;
+}
+
+class _InputCarousel extends StatefulWidget {
   final PageController controller;
   final int currentIndex;
   final ValueChanged<int> onIndexChanged;
-  final List<String> profileOrder;
-  final Map<String, List<InputField>> profileGroups;
+  final _CarouselUiOptions options;
+  final List<_CarouselPage> pages;
   final Widget Function(InputField field) buildField;
 
-  const _ProfileCarousel({
+  const _InputCarousel({
     required this.controller,
     required this.currentIndex,
     required this.onIndexChanged,
-    required this.profileOrder,
-    required this.profileGroups,
+    required this.options,
+    required this.pages,
     required this.buildField,
   });
 
   @override
-  State<_ProfileCarousel> createState() => _ProfileCarouselState();
+  State<_InputCarousel> createState() => _InputCarouselState();
 }
 
-class _ProfileCarouselState extends State<_ProfileCarousel> {
+class _InputCarouselState extends State<_InputCarousel> {
   late int _activeIndex;
 
   @override
   void initState() {
     super.initState();
-    _activeIndex = widget.profileOrder.isEmpty
+    _activeIndex = widget.pages.isEmpty
         ? 0
-        : widget.currentIndex.clamp(0, widget.profileOrder.length - 1);
+        : widget.currentIndex.clamp(0, widget.pages.length - 1);
     widget.controller.addListener(_handlePageChange);
   }
 
   @override
-  void didUpdateWidget(covariant _ProfileCarousel oldWidget) {
+  void didUpdateWidget(covariant _InputCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_handlePageChange);
       widget.controller.addListener(_handlePageChange);
     }
 
-    if (widget.currentIndex != _activeIndex &&
-        widget.currentIndex >= 0 &&
-        widget.currentIndex < widget.profileOrder.length) {
+    final maxIndex = widget.pages.isEmpty ? 0 : widget.pages.length - 1;
+    final desiredIndex = widget.pages.isEmpty
+        ? 0
+        : widget.currentIndex.clamp(0, maxIndex);
+
+    if (desiredIndex != _activeIndex) {
       setState(() {
-        _activeIndex = widget.currentIndex;
+        _activeIndex = desiredIndex;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        widget.controller.jumpToPage(widget.currentIndex);
+        if (!mounted || !widget.controller.hasClients) return;
+        widget.controller.jumpToPage(desiredIndex);
       });
     }
   }
@@ -818,7 +1152,7 @@ class _ProfileCarouselState extends State<_ProfileCarousel> {
     final page = widget.controller.page;
     if (page == null) return;
     final rounded = page.round();
-    if (rounded == _activeIndex) {
+    if (rounded == _activeIndex || rounded < 0 || rounded >= widget.pages.length) {
       return;
     }
     setState(() {
@@ -828,7 +1162,8 @@ class _ProfileCarouselState extends State<_ProfileCarousel> {
   }
 
   void _goTo(int delta) {
-    final target = (_activeIndex + delta).clamp(0, widget.profileOrder.length - 1);
+    if (widget.pages.isEmpty) return;
+    final target = (_activeIndex + delta).clamp(0, widget.pages.length - 1);
     if (target == _activeIndex) return;
     widget.controller.animateToPage(
       target,
@@ -837,45 +1172,92 @@ class _ProfileCarouselState extends State<_ProfileCarousel> {
     );
   }
 
+  String _headerTextFor(int index) {
+    if (widget.pages.isEmpty) {
+      return widget.options.itemLabel;
+    }
+
+    final total = widget.pages.length;
+    final page = widget.pages[index];
+    final label = page.label?.trim();
+    final defaultText = label != null && label.isNotEmpty
+        ? label
+        : '${widget.options.itemLabel} ${index + 1} of $total';
+
+    final template = widget.options.pageTitleTemplate;
+    if (template == null || template.isEmpty) {
+      return defaultText;
+    }
+
+    var resolved = template
+        .replaceAll('{index}', '${index + 1}')
+        .replaceAll('{current}', '${index + 1}')
+        .replaceAll('{total}', '$total')
+        .replaceAll('{label}', label ?? '')
+        .replaceAll('{itemLabel}', widget.options.itemLabel)
+        .replaceAll('{itemLabelLower}', widget.options.itemLabel.toLowerCase())
+        .replaceAll('{default}', defaultText);
+
+    resolved = resolved.trim();
+    return resolved.isEmpty ? defaultText : resolved;
+  }
+
+  String _tooltipText(String action, String? override) {
+    if (override != null && override.trim().isNotEmpty) {
+      return override;
+    }
+    final noun = widget.options.itemLabel.isEmpty
+        ? 'item'
+        : widget.options.itemLabel.toLowerCase();
+    return '$action $noun';
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (widget.pages.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
+    final header = _headerTextFor(_activeIndex);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Text(
-              'Profile ${_activeIndex + 1} of ${widget.profileOrder.length}',
-              style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+            Expanded(
+              child: Text(
+                header,
+                style: tt.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+              ),
             ),
-            const Spacer(),
             IconButton(
               icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 18),
               onPressed: _activeIndex > 0 ? () => _goTo(-1) : null,
-              tooltip: 'Previous profile',
+              tooltip: _tooltipText('Previous', widget.options.previousTooltip),
             ),
             const SizedBox(width: 4),
             IconButton(
               icon: const Icon(Icons.arrow_forward_ios_rounded, size: 18),
-              onPressed:
-                  _activeIndex < widget.profileOrder.length - 1 ? () => _goTo(1) : null,
-              tooltip: 'Next profile',
+              onPressed: _activeIndex < widget.pages.length - 1
+                  ? () => _goTo(1)
+                  : null,
+              tooltip: _tooltipText('Next', widget.options.nextTooltip),
             ),
           ],
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 420,
+          height: widget.options.height,
           child: PageView.builder(
             controller: widget.controller,
             physics: const BouncingScrollPhysics(),
-            itemCount: widget.profileOrder.length,
+            itemCount: widget.pages.length,
             itemBuilder: (context, index) {
-              final profileKey = widget.profileOrder[index];
-              final fields = widget.profileGroups[profileKey] ?? const <InputField>[];
+              final page = widget.pages[index];
+              final fields = page.fields;
               return SingleChildScrollView(
                 padding: const EdgeInsets.only(right: 4),
                 child: Column(
@@ -890,26 +1272,28 @@ class _ProfileCarouselState extends State<_ProfileCarousel> {
             },
           ),
         ),
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            for (var i = 0; i < widget.profileOrder.length; i++) ...[
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                margin: const EdgeInsets.symmetric(horizontal: 4),
-                height: 8,
-                width: i == _activeIndex ? 20 : 8,
-                decoration: BoxDecoration(
-                  color: i == _activeIndex
-                      ? cs.primary
-                      : cs.onSurface.withOpacity(0.28),
-                  borderRadius: BorderRadius.circular(4),
+        if (widget.options.showPageIndicator && widget.pages.length > 1) ...[
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              for (var i = 0; i < widget.pages.length; i++) ...[
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 220),
+                  margin: const EdgeInsets.symmetric(horizontal: 4),
+                  height: 8,
+                  width: i == _activeIndex ? 20 : 8,
+                  decoration: BoxDecoration(
+                    color: i == _activeIndex
+                        ? cs.primary
+                        : cs.onSurface.withOpacity(0.28),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                 ),
-              ),
+              ],
             ],
-          ],
-        ),
+          ),
+        ],
       ],
     );
   }
